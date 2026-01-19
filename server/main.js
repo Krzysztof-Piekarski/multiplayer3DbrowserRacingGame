@@ -2,15 +2,16 @@ import express from 'express';
 import { createServer } from 'http';
 import {Server} from 'socket.io';
 
+const PORT = 3000;
+const clientPORT = 888;
+
 const app = express();
 const server = createServer(app);
 const io = new Server(server, {
     cors: {
-        origin: "http://localhost:8024",
+        origin: `http://localhost:${clientPORT}`,
     }
 });
-
-const PORT = 3000;
 
 io.on('connection', (socket) => {
     console.log(`New client connected: ${socket.id}`);
@@ -25,5 +26,5 @@ io.on('connection', (socket) => {
 });
 
 server.listen(PORT, () => {
-    console.log(`Server running at http://localhost:${PORT}\nTo start game open http://localhost:8024 in your browser.`);
+    console.log(`Server running at http://localhost:${PORT}\nTo start game open http://localhost:${clientPORT} in your browser.`);
 });
