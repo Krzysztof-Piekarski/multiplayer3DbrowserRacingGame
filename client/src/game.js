@@ -16,8 +16,9 @@ export function startGame({ scene, renderer } = {}) {
     const players = new Map();
 
     socket.on('initPlayer', (data) => {
-        player = new Player(data.id);
+        player = new Player(data.id, 0xb8b806);
         console.log(`Initialized player with id: ${player.getPlayerId()}`);
+        players.set(data.id, player);
         scene.add(player.mesh);
     });
 
@@ -52,12 +53,10 @@ export function startGame({ scene, renderer } = {}) {
             if (p) {
                 p.updatePosition(playerData.position);
             } else {
-                if (playerData.id !== player.getPlayerId()) {
-                    const newPlayer = new Player(playerData.id);
-                    newPlayer.updatePosition(playerData.position);
-                    scene.add(newPlayer.mesh);
-                    players.set(playerData.id, newPlayer);
-                }
+                const newPlayer = new Player(playerData.id);
+                newPlayer.updatePosition(playerData.position);
+                scene.add(newPlayer.mesh);
+                players.set(playerData.id, newPlayer);
             }
         });
     });

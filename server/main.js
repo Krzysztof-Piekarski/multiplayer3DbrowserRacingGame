@@ -44,18 +44,11 @@ To start game open http://localhost:${clientPORT} in your browser.`);
 });
 
 function applyPlayerInput(player, inputData) {
-    if (inputData.forward) player.position.z -= SPEED;
-    if (inputData.backward) player.position.z += SPEED;
-    if (inputData.left) player.position.x -= SPEED;
-    if (inputData.right) player.position.x += SPEED;
+    if (inputData.forward) player.position.x -= SPEED;
+    if (inputData.backward) player.position.x += SPEED;
+    if (inputData.left) player.position.z += SPEED;
+    if (inputData.right) player.position.z -= SPEED;
 }
-
-let lastTime = Date.now();
-setInterval(() => {
-    const now = Date.now();
-    const deltaTime = now - lastTime;
-    lastTime = now;
-}, 1000 / TICK_RATE);
 
 setInterval(() => {
     const playersArray = Array.from(players.values());

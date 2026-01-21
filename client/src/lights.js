@@ -1,9 +1,9 @@
 import * as THREE from 'three';
 
 export function createLights() {
-    const light = new THREE.AmbientLight(0xffffff, 0.5);
+    const light = new THREE.AmbientLight(0xffffff, 0.8);
 
-    const dirLight = new THREE.DirectionalLight(0xffffff, 0.3);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
     dirLight.castShadow = true;
     dirLight.position.set(0, 70, 70);
     dirLight.shadow.camera.top = 50;
