@@ -20,6 +20,5 @@ export class Player {
 
     updatePosition(newPosition) {
         this.position = newPosition;
-        this.mesh.position.copy(this.position);
     }
 }

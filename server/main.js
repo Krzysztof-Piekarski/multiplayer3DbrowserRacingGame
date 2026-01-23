@@ -4,7 +4,7 @@ import {Server} from 'socket.io';
 
 const PORT = 3000;
 const clientPORT = 888;
-const SPEED = 1;
+const SPEED = 4;
 
 const app = express();
 const server = createServer(app);
@@ -16,6 +16,7 @@ const io = new Server(server, {
 
 const TICK_RATE = 20;
 const players = new Map();
+let tick = 0;
 
 io.on('connection', (socket) => {
     console.log(`New player connected: ${socket.id}`);
@@ -52,5 +53,8 @@ function applyPlayerInput(player, inputData) {
 
 setInterval(() => {
     const playersArray = Array.from(players.values());
-    io.sockets.emit('playersUpdate', playersArray);
+    const serverTime = Date.now();
+    const snapshot = { tick, serverTime, players: playersArray };
+    io.sockets.emit('snapshot', snapshot);
+    tick++;
 }, 1000 / TICK_RATE);

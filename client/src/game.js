@@ -3,8 +3,11 @@ import * as THREE from 'three';
 import { createCamera } from './camera.js';
 import { createLights } from './lights.js';
 import { Player } from './player.js';
+import { SnapshotsBuffer } from './snapshotsBuffer.js';
 
 const TICK_RATE = 20;
+const INTERPOLATION_DELAY = 100;
+const SPEED = 5;
 
 export function startGame({ scene, renderer } = {}) {
     const socket = io('http://localhost:3000');
@@ -47,8 +50,11 @@ export function startGame({ scene, renderer } = {}) {
         }
     }, 1000 / TICK_RATE);
 
-    socket.on('playersUpdate', (data) => {
-        data.forEach(playerData => {
+    let snapshotsBuffer = new SnapshotsBuffer();
+
+    socket.on('snapshot', (snapshot) => {
+        snapshotsBuffer.add(snapshot);
+        snapshot.players.forEach(playerData => {
             let p = players.get(playerData.id);
             if (p) {
                 p.updatePosition(playerData.position);
@@ -59,6 +65,9 @@ export function startGame({ scene, renderer } = {}) {
                 players.set(playerData.id, newPlayer);
             }
         });
+
+        camera.position.set(player.position.x + 7, player.position.y + 1, player.position.z);
+        camera.lookAt(player.position.x, player.position.y, player.position.z);
     });
 
     socket.on('playerDisconnected', (playerId) => {
@@ -69,10 +78,31 @@ export function startGame({ scene, renderer } = {}) {
         }
     });
 
-    function animate() {
+    function interpolate() {
+        const renderTime = Date.now() - INTERPOLATION_DELAY;
+        const snapshots = snapshotsBuffer.getSnapshots(renderTime);
+        if (!snapshots) return;
 
-        requestAnimationFrame(animate);
+        const { older, newer } = snapshots;
+        const span = newer.serverTime - older.serverTime;
+        if (span <= 0) return;
+
+        let t = (renderTime - older.serverTime) / span;
+        t = Math.min(Math.max(t, 0), 1);
+        older.players.forEach(p => {
+            if (p.id === player.getPlayerId()) return;
+            if (!players.has(p.id)) return;
+
+            const newState = newer.players.find(op => op.id === p.id);
+            if (!newState) return;
+            players.get(p.id).mesh.position.lerpVectors(p.position, newState.position, t);
+        });
+    }
+
+    function animate() {
+        interpolate();
         renderer.render(scene, camera);
+        requestAnimationFrame(animate);
     }
 
     window.addEventListener('resize', () => {
