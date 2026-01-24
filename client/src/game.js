@@ -53,7 +53,14 @@ export function startGame({ scene, renderer } = {}) {
             let p = players.get(playerData.id);
             if (p) {
                 if (p.id === player.id) {
-                    player.updatePosition(playerData.position);
+                    const serverPos = playerData.position;
+
+                    const dx = serverPos.x - player.position.x;
+                    const dz = serverPos.z - player.position.z;
+                    const distSq = dx * dx + dz * dz;
+                    if (distSq > 0.0001){
+                        player.updatePosition(serverPos);
+                    }
 
                     while (pendingInputs.length && pendingInputs[0].seq <= playerData.lastProcessedInput) {
                         pendingInputs.shift();
@@ -71,9 +78,6 @@ export function startGame({ scene, renderer } = {}) {
                 players.set(playerData.id, newPlayer);
             }
         });
-
-        camera.position.set(player.position.x + 7, player.position.y + 1, player.position.z);
-        camera.lookAt(player.position.x, player.position.y, player.position.z);
     });
 
     socket.on('playerDisconnected', (playerId) => {
@@ -107,8 +111,6 @@ export function startGame({ scene, renderer } = {}) {
         if (input.backward) player.position.x += SPEED;
         if (input.left) player.position.z += SPEED;
         if (input.right) player.position.z -= SPEED;
-
-        player.mesh.position.copy(player.position);
     }
 
     function interpolate() {
@@ -139,6 +141,12 @@ export function startGame({ scene, renderer } = {}) {
         if(player && time - lastPredictionTime >= TICK_MS){
             playerPrediction();
             lastPredictionTime += TICK_MS;
+        }
+
+        if(player){
+            player.render();
+            camera.position.set(player.mesh.position.x + 7, player.mesh.position.y + 1, player.mesh.position.z);
+            camera.lookAt(player.mesh.position.x, player.mesh.position.y, player.mesh.position.z);
         }
 
         interpolate();
