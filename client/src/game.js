@@ -2,12 +2,13 @@ import { io } from 'socket.io-client';
 import * as THREE from 'three';
 import { createCamera } from './camera.js';
 import { createLights } from './lights.js';
+import { Input } from './input.js';
 import { Player } from './player.js';
 import { SnapshotsBuffer } from './snapshotsBuffer.js';
 
 const TICK_RATE = 20;
 const INTERPOLATION_DELAY = 100;
-const SPEED = 5;
+const SPEED = 4;
 
 export function startGame({ scene, renderer } = {}) {
     const socket = io('http://localhost:3000');
@@ -31,24 +32,18 @@ export function startGame({ scene, renderer } = {}) {
     const dirLight = lights.dirLight;
     scene.add(light, dirLight);
 
-    const keys = {};
-    window.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
-    window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+    const input = new Input();
+    window.addEventListener('keydown', e => {if (e.key.toLowerCase() === 'w') input.setForward(true);
+                                        else if (e.key.toLowerCase() === 's') input.setBackward(true);
+                                        else if (e.key.toLowerCase() === 'a') input.setLeft(true);
+                                        else if (e.key.toLowerCase() === 'd') input.setRight(true);
+    });
+    window.addEventListener('keyup', e => {if (e.key.toLowerCase() === 'w') input.setForward(false);
+                                        else if (e.key.toLowerCase() === 's') input.setBackward(false);
+                                        else if (e.key.toLowerCase() === 'a') input.setLeft(false);
+                                        else if (e.key.toLowerCase() === 'd') input.setRight(false);
+    });
 
-    function getInput() {
-        const forward = keys['w'] || false;
-        const backward = keys['s'] || false;
-        const left = keys['a'] || false;
-        const right = keys['d'] || false;
-        return { forward, backward, left, right };
-    }
-
-    setInterval(() => {
-        if (player) {
-            const input = getInput();
-            socket.emit('playerInput', input);
-        }
-    }, 1000 / TICK_RATE);
 
     let snapshotsBuffer = new SnapshotsBuffer();
 
@@ -57,7 +52,18 @@ export function startGame({ scene, renderer } = {}) {
         snapshot.players.forEach(playerData => {
             let p = players.get(playerData.id);
             if (p) {
-                p.updatePosition(playerData.position);
+                if (p.id === player.id) {
+                    player.updatePosition(playerData.position);
+
+                    while (pendingInputs.length && pendingInputs[0].seq <= playerData.lastProcessedInput) {
+                        pendingInputs.shift();
+                    }
+
+                    pendingInputs.forEach(inputPack => {
+                        const input = inputPack.input;
+                        simulatePlayer(input);
+                    });
+                }
             } else {
                 const newPlayer = new Player(playerData.id);
                 newPlayer.updatePosition(playerData.position);
@@ -77,6 +83,33 @@ export function startGame({ scene, renderer } = {}) {
             players.delete(playerId);
         }
     });
+
+    const pendingInputs = [];
+    let inputSequence = 0;
+
+    function playerPrediction(){
+        if (!player) return;
+        if (!input.hasInput()) return;
+
+        const inputPack = {
+            seq: inputSequence++,
+            input: input.getInput(),
+        };
+        pendingInputs.push(inputPack);
+
+        simulatePlayer(input.getInput());
+
+        socket.emit('playerInput', inputPack);
+    }
+
+    function simulatePlayer(input) {
+        if (input.forward) player.position.x -= SPEED;
+        if (input.backward) player.position.x += SPEED;
+        if (input.left) player.position.z += SPEED;
+        if (input.right) player.position.z -= SPEED;
+
+        player.mesh.position.copy(player.position);
+    }
 
     function interpolate() {
         const renderTime = Date.now() - INTERPOLATION_DELAY;
@@ -99,7 +132,15 @@ export function startGame({ scene, renderer } = {}) {
         });
     }
 
-    function animate() {
+    let lastPredictionTime = 0;
+    const TICK_MS = 1000 / TICK_RATE;
+
+    function animate(time) {
+        if(player && time - lastPredictionTime >= TICK_MS){
+            playerPrediction();
+            lastPredictionTime += TICK_MS;
+        }
+
         interpolate();
         renderer.render(scene, camera);
         requestAnimationFrame(animate);
