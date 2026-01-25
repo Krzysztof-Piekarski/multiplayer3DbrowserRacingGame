@@ -1,14 +1,24 @@
 import { io } from 'socket.io-client';
-import * as THREE from 'three';
 import { createCamera } from './camera.js';
 import { createLights } from './lights.js';
 import { Input } from './input.js';
 import { Player } from './player.js';
 import { SnapshotsBuffer } from './snapshotsBuffer.js';
+import * as THREE from 'three';
+import { update } from 'three/examples/jsm/libs/tween.module.js';
 
 const TICK_RATE = 20;
 const INTERPOLATION_DELAY = 100;
-const SPEED = 4;
+
+const MAX_SPEED = 20;
+const ACCELERATION = 10;
+const FRICTION = 5;
+const TURN_RATE = 2.5;
+const RESPONSE = 10;
+
+const CAMERA_DISTANCE = 6;
+const CAMERA_HEIGHT = 4;
+const CAMERA_LERP = 0.16;
 
 export function startGame({ scene, renderer } = {}) {
     const socket = io('http://localhost:3000');
@@ -53,14 +63,9 @@ export function startGame({ scene, renderer } = {}) {
             let p = players.get(playerData.id);
             if (p) {
                 if (p.id === player.id) {
-                    const serverPos = playerData.position;
-
-                    const dx = serverPos.x - player.position.x;
-                    const dz = serverPos.z - player.position.z;
-                    const distSq = dx * dx + dz * dz;
-                    if (distSq > 0.0001){
-                        player.updatePosition(serverPos);
-                    }
+                    player.updatePosition(playerData.position);
+                    player.velocity = playerData.velocity;
+                    player.rotation = playerData.rotation;
 
                     while (pendingInputs.length && pendingInputs[0].seq <= playerData.lastProcessedInput) {
                         pendingInputs.shift();
@@ -68,7 +73,7 @@ export function startGame({ scene, renderer } = {}) {
 
                     pendingInputs.forEach(inputPack => {
                         const input = inputPack.input;
-                        simulatePlayer(input);
+                        simulatePlayer(input, 1 / TICK_RATE);
                     });
                 }
             } else {
@@ -91,9 +96,8 @@ export function startGame({ scene, renderer } = {}) {
     const pendingInputs = [];
     let inputSequence = 0;
 
-    function playerPrediction(){
+    function playerPrediction(dt){
         if (!player) return;
-        if (!input.hasInput()) return;
 
         const inputPack = {
             seq: inputSequence++,
@@ -101,16 +105,31 @@ export function startGame({ scene, renderer } = {}) {
         };
         pendingInputs.push(inputPack);
 
-        simulatePlayer(input.getInput());
+        simulatePlayer(inputPack.input, dt);
 
         socket.emit('playerInput', inputPack);
     }
 
-    function simulatePlayer(input) {
-        if (input.forward) player.position.x -= SPEED;
-        if (input.backward) player.position.x += SPEED;
-        if (input.left) player.position.z += SPEED;
-        if (input.right) player.position.z -= SPEED;
+    function simulatePlayer(input, dt) {
+        player.throttle += (input.throttle - player.throttle) * RESPONSE * dt;
+        player.steer += (input.steer - player.steer) * RESPONSE * dt;
+        if (player.throttle != 0) {
+            player.velocity += player.throttle * ACCELERATION * dt;
+        } else {
+            const sign = Math.sign(player.velocity);
+            player.velocity -= sign * FRICTION * dt;
+            if (Math.sign(player.velocity) != sign) {
+                player.velocity = 0;
+            }
+        }
+
+        player.velocity = Math.max(-MAX_SPEED, Math.min(MAX_SPEED, player.velocity));
+
+        const speedFactor = Math.min(Math.abs(player.velocity) / MAX_SPEED, 1);
+        player.rotation += player.steer * TURN_RATE * speedFactor * dt;
+
+        player.position.x += Math.cos(player.rotation) * player.velocity * dt;
+        player.position.z += Math.sin(player.rotation) * player.velocity * dt;
     }
 
     function interpolate() {
@@ -131,7 +150,24 @@ export function startGame({ scene, renderer } = {}) {
             const newState = newer.players.find(op => op.id === p.id);
             if (!newState) return;
             players.get(p.id).mesh.position.lerpVectors(p.position, newState.position, t);
+            players.get(p.id).mesh.quaternion.slerpQuaternions(
+                new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0), -p.rotation),
+                new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0), -newState.rotation),
+                t
+            );
         });
+    }
+
+    function updateCamera(){
+        const forward = new THREE.Vector3(
+        Math.cos(player.renderRotation), 0, Math.sin(player.renderRotation));
+
+        const desiredCameraPos = player.mesh.position.clone()
+        .addScaledVector(forward, CAMERA_DISTANCE)
+        .add(new THREE.Vector3(0, CAMERA_HEIGHT, 0));
+
+        camera.position.lerp(desiredCameraPos, CAMERA_LERP);
+        camera.lookAt(player.mesh.position);
     }
 
     let lastPredictionTime = 0;
@@ -139,14 +175,13 @@ export function startGame({ scene, renderer } = {}) {
 
     function animate(time) {
         if(player && time - lastPredictionTime >= TICK_MS){
-            playerPrediction();
+            playerPrediction(1 / TICK_RATE);
             lastPredictionTime += TICK_MS;
         }
 
         if(player){
             player.render();
-            camera.position.set(player.mesh.position.x + 7, player.mesh.position.y + 1, player.mesh.position.z);
-            camera.lookAt(player.mesh.position.x, player.mesh.position.y, player.mesh.position.z);
+            updateCamera();
         }
 
         interpolate();
