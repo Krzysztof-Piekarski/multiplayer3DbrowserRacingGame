@@ -47,11 +47,13 @@ export function startGame({ scene, renderer } = {}) {
                                         else if (e.key.toLowerCase() === 's') input.setBackward(true);
                                         else if (e.key.toLowerCase() === 'a') input.setLeft(true);
                                         else if (e.key.toLowerCase() === 'd') input.setRight(true);
+                                        else if (e.key.toLowerCase() === ' ') input.setHandbrake(true);
     });
     window.addEventListener('keyup', e => {if (e.key.toLowerCase() === 'w') input.setForward(false);
                                         else if (e.key.toLowerCase() === 's') input.setBackward(false);
                                         else if (e.key.toLowerCase() === 'a') input.setLeft(false);
                                         else if (e.key.toLowerCase() === 'd') input.setRight(false);
+                                        else if (e.key.toLowerCase() === ' ') input.setHandbrake(false);
     });
 
 
@@ -113,6 +115,7 @@ export function startGame({ scene, renderer } = {}) {
     function simulatePlayer(input, dt) {
         player.throttle += (input.throttle - player.throttle) * RESPONSE * dt;
         player.steer += (input.steer - player.steer) * RESPONSE * dt;
+
         if (player.throttle != 0) {
             player.velocity += player.throttle * ACCELERATION * dt;
         } else {
@@ -125,8 +128,14 @@ export function startGame({ scene, renderer } = {}) {
 
         player.velocity = Math.max(-MAX_SPEED, Math.min(MAX_SPEED, player.velocity));
 
+        let turnRate = TURN_RATE;
+        if(input.handbrake){
+            turnRate *= 2;
+            player.velocity *= 0.95;
+        }
+
         const speedFactor = Math.min(Math.abs(player.velocity) / MAX_SPEED, 1);
-        player.rotation += player.steer * TURN_RATE * speedFactor * dt;
+        player.rotation += player.steer * turnRate * speedFactor * dt;
 
         player.position.x += Math.cos(player.rotation) * player.velocity * dt;
         player.position.z += Math.sin(player.rotation) * player.velocity * dt;
@@ -179,12 +188,12 @@ export function startGame({ scene, renderer } = {}) {
             lastPredictionTime += TICK_MS;
         }
 
+        interpolate();
         if(player){
             player.render();
             updateCamera();
         }
 
-        interpolate();
         renderer.render(scene, camera);
         requestAnimationFrame(animate);
     }

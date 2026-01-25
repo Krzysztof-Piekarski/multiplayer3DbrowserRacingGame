@@ -4,6 +4,7 @@ export class Input{
         this.backward = false;
         this.left = false;
         this.right = false;
+        this.handbrake = false;
 
         this.targetThrottle = 0;
         this.targetSteer = 0;
@@ -25,6 +26,10 @@ export class Input{
         this.right = value;
     }
 
+    setHandbrake(value){
+        this.handbrake = value;
+    }
+
     hasInput(){
         return this.forward || this.backward || this.left || this.right;
     }
@@ -32,7 +37,8 @@ export class Input{
     getInput(){
         return {
             throttle: (this.backward ? 1 : 0) + (this.forward ? -1 : 0),
-            steer: (this.left ? -1 : 0) + (this.right ? 1 : 0)
+            steer: (this.left ? -1 : 0) + (this.right ? 1 : 0),
+            handbrake: this.handbrake
         };
     }
 }

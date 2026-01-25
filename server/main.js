@@ -54,6 +54,7 @@ function simulatePlayer(player, inputPack, dt) {
     const input = inputPack.input;
     player.throttle += (input.throttle - player.throttle) * RESPONSE * dt;
     player.steer += (input.steer - player.steer) * RESPONSE * dt;
+
     if (input.throttle != 0) {
         player.velocity += input.throttle * ACCELERATION * dt;
     } else {
@@ -66,8 +67,14 @@ function simulatePlayer(player, inputPack, dt) {
 
     player.velocity = Math.max(-MAX_SPEED, Math.min(MAX_SPEED, player.velocity));
 
+    let turnRate = TURN_RATE;
+    if(input.handbrake){
+        turnRate *= 2;
+        player.velocity *= 0.95;
+    }
+
     const speedFactor = Math.min(Math.abs(player.velocity) / MAX_SPEED, 1);
-    player.rotation += player.steer * TURN_RATE * speedFactor * dt;
+    player.rotation += player.steer * turnRate * speedFactor * dt;
 
     player.position.x += Math.cos(player.rotation) * player.velocity * dt;
     player.position.z += Math.sin(player.rotation) * player.velocity * dt;
