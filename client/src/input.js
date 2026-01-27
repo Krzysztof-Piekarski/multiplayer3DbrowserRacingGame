@@ -36,7 +36,7 @@ export class Input{
 
     getInput(){
         return {
-            throttle: (this.backward ? 1 : 0) + (this.forward ? -1 : 0),
+            throttle: (this.forward ? 1 : 0) + (this.backward ? -1 : 0),
             steer: (this.left ? -1 : 0) + (this.right ? 1 : 0),
             handbrake: this.handbrake
         };

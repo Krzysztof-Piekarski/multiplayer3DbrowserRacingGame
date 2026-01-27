@@ -74,7 +74,8 @@ function simulatePlayer(player, inputPack, dt) {
     }
 
     const speedFactor = Math.min(Math.abs(player.velocity) / MAX_SPEED, 1);
-    player.rotation += player.steer * turnRate * speedFactor * dt;
+    const direction = Math.sign(player.velocity) || 1;
+    player.rotation += player.steer * turnRate * speedFactor * dt * direction;
 
     player.position.x += Math.cos(player.rotation) * player.velocity * dt;
     player.position.z += Math.sin(player.rotation) * player.velocity * dt;

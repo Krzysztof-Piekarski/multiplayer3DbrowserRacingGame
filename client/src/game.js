@@ -5,7 +5,7 @@ import { Input } from './input.js';
 import { Player } from './player.js';
 import { SnapshotsBuffer } from './snapshotsBuffer.js';
 import * as THREE from 'three';
-import { update } from 'three/examples/jsm/libs/tween.module.js';
+import Stats from 'three/examples/jsm/libs/stats.module.js';
 
 const TICK_RATE = 20;
 const INTERPOLATION_DELAY = 100;
@@ -18,7 +18,8 @@ const RESPONSE = 10;
 
 const CAMERA_DISTANCE = 6;
 const CAMERA_HEIGHT = 4;
-const CAMERA_LERP = 0.16;
+const CAMERA_LERP = 0.14;
+let statsVisible = false;
 
 export function startGame({ scene, renderer } = {}) {
     const socket = io('http://localhost:3000');
@@ -48,6 +49,10 @@ export function startGame({ scene, renderer } = {}) {
                                         else if (e.key.toLowerCase() === 'a') input.setLeft(true);
                                         else if (e.key.toLowerCase() === 'd') input.setRight(true);
                                         else if (e.key.toLowerCase() === ' ') input.setHandbrake(true);
+                                        else if (e.key.toLowerCase() === 'p') {
+                                            statsVisible = !statsVisible;
+                                            stats.dom.style.display = statsVisible ? 'block' : 'none';
+                                        }
     });
     window.addEventListener('keyup', e => {if (e.key.toLowerCase() === 'w') input.setForward(false);
                                         else if (e.key.toLowerCase() === 's') input.setBackward(false);
@@ -135,7 +140,8 @@ export function startGame({ scene, renderer } = {}) {
         }
 
         const speedFactor = Math.min(Math.abs(player.velocity) / MAX_SPEED, 1);
-        player.rotation += player.steer * turnRate * speedFactor * dt;
+        const direction = Math.sign(player.velocity) || 1;
+        player.rotation += player.steer * turnRate * speedFactor * dt * direction;
 
         player.position.x += Math.cos(player.rotation) * player.velocity * dt;
         player.position.z += Math.sin(player.rotation) * player.velocity * dt;
@@ -167,12 +173,16 @@ export function startGame({ scene, renderer } = {}) {
         });
     }
 
+    const stats = new Stats();
+    document.body.appendChild(stats.dom);
+    stats.dom.style.display = 'none';
+
     function updateCamera(){
         const forward = new THREE.Vector3(
         Math.cos(player.renderRotation), 0, Math.sin(player.renderRotation));
 
         const desiredCameraPos = player.mesh.position.clone()
-        .addScaledVector(forward, CAMERA_DISTANCE)
+        .addScaledVector(forward, -CAMERA_DISTANCE)
         .add(new THREE.Vector3(0, CAMERA_HEIGHT, 0));
 
         camera.position.lerp(desiredCameraPos, CAMERA_LERP);
@@ -194,6 +204,9 @@ export function startGame({ scene, renderer } = {}) {
             updateCamera();
         }
 
+        if(statsVisible) {
+            stats.update();
+        }
         renderer.render(scene, camera);
         requestAnimationFrame(animate);
     }
