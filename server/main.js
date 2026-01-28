@@ -1,6 +1,7 @@
 import express from 'express';
 import { createServer } from 'http';
-import {Server} from 'socket.io';
+import { Server } from 'socket.io';
+import { moveTowards } from '../client/src/helpers.js';
 
 const PORT = 3000;
 const clientPORT = 888;
@@ -55,17 +56,17 @@ function simulatePlayer(player, inputPack, dt) {
     player.throttle += (input.throttle - player.throttle) * RESPONSE * dt;
     player.steer += (input.steer - player.steer) * RESPONSE * dt;
 
-    if (input.throttle != 0) {
-        player.velocity += input.throttle * ACCELERATION * dt;
-    } else {
-        const sign = Math.sign(player.velocity);
-        player.velocity -= sign * FRICTION * dt;
-        if (Math.sign(player.velocity) != sign) {
-            player.velocity = 0;
-        }
+    let targetSpeed = 0;
+    
+    if (input.throttle > 0) {
+        targetSpeed = MAX_SPEED * input.throttle;
+    } else if (input.throttle < 0) {
+        targetSpeed = -MAX_SPEED * -input.throttle;
     }
 
-    player.velocity = Math.max(-MAX_SPEED, Math.min(MAX_SPEED, player.velocity));
+    const acceleration = Math.abs(targetSpeed) > Math.abs(player.velocity) ? ACCELERATION : FRICTION;
+
+    player.velocity = moveTowards(player.velocity, targetSpeed, acceleration*dt);
 
     let turnRate = TURN_RATE;
     if(input.handbrake){

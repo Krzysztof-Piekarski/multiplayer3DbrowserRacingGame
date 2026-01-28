@@ -3,12 +3,14 @@ import { createCamera } from './camera.js';
 import { createLights } from './lights.js';
 import { Input } from './input.js';
 import { Player } from './player.js';
+import { moveTowards} from './helpers.js';
 import { SnapshotsBuffer } from './snapshotsBuffer.js';
 import * as THREE from 'three';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
 
 const TICK_RATE = 20;
 const INTERPOLATION_DELAY = 100;
+const MAX_LOCAL_PREDICTION = 4;
 
 const MAX_SPEED = 20;
 const ACCELERATION = 10;
@@ -61,7 +63,7 @@ export function startGame({ scene, renderer } = {}) {
                                         else if (e.key.toLowerCase() === ' ') input.setHandbrake(false);
     });
 
-
+    let serverStartSendingSnapshots = false;
     let snapshotsBuffer = new SnapshotsBuffer();
 
     socket.on('snapshot', (snapshot) => {
@@ -70,6 +72,7 @@ export function startGame({ scene, renderer } = {}) {
             let p = players.get(playerData.id);
             if (p) {
                 if (p.id === player.id) {
+                    serverStartSendingSnapshots = true;
                     player.updatePosition(playerData.position);
                     player.velocity = playerData.velocity;
                     player.rotation = playerData.rotation;
@@ -106,6 +109,10 @@ export function startGame({ scene, renderer } = {}) {
     function playerPrediction(dt){
         if (!player) return;
 
+        while (pendingInputs.length > MAX_LOCAL_PREDICTION) {
+            return;
+        }
+
         const inputPack = {
             seq: inputSequence++,
             input: input.getInput(),
@@ -121,17 +128,17 @@ export function startGame({ scene, renderer } = {}) {
         player.throttle += (input.throttle - player.throttle) * RESPONSE * dt;
         player.steer += (input.steer - player.steer) * RESPONSE * dt;
 
-        if (player.throttle != 0) {
-            player.velocity += player.throttle * ACCELERATION * dt;
-        } else {
-            const sign = Math.sign(player.velocity);
-            player.velocity -= sign * FRICTION * dt;
-            if (Math.sign(player.velocity) != sign) {
-                player.velocity = 0;
-            }
+        let targetSpeed = 0;
+
+        if (player.throttle > 0) {
+            targetSpeed = MAX_SPEED * player.throttle;
+        } else if (player.throttle < 0) {
+            targetSpeed = -MAX_SPEED * -player.throttle;
         }
 
-        player.velocity = Math.max(-MAX_SPEED, Math.min(MAX_SPEED, player.velocity));
+        const acceleration = Math.abs(targetSpeed) > Math.abs(player.velocity) ? ACCELERATION : FRICTION;
+
+        player.velocity = moveTowards(player.velocity, targetSpeed, acceleration*dt);
 
         let turnRate = TURN_RATE;
         if(input.handbrake){
@@ -193,13 +200,13 @@ export function startGame({ scene, renderer } = {}) {
     const TICK_MS = 1000 / TICK_RATE;
 
     function animate(time) {
-        if(player && time - lastPredictionTime >= TICK_MS){
+        if(player && serverStartSendingSnapshots && time - lastPredictionTime >= TICK_MS){
             playerPrediction(1 / TICK_RATE);
             lastPredictionTime += TICK_MS;
         }
 
         interpolate();
-        if(player){
+        if(player) {
             player.render();
             updateCamera();
         }
