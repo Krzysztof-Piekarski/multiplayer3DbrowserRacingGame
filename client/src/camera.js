@@ -12,11 +12,10 @@ export class Camera {
     update(dt = 1/60, player){
         const forward = new THREE.Vector3(
         Math.cos(player.renderRotation), 0, Math.sin(player.renderRotation));
-        
-        const desiredCameraPos = player.renderPosition.clone()
-        .addScaledVector(forward, -Camera.DISTANCE);
-
         const speedFactor = Math.min(Math.abs(player.velocity) / Set.MAX_SPEED, 1);
+
+        const desiredCameraPos = player.renderPosition.clone()
+        .addScaledVector(forward, (-Camera.DISTANCE * speedFactor - Camera.DISTANCE/2));
         desiredCameraPos.y += Camera.HEIGHT + speedFactor * 0.8;
 
         const velocityDirection = new THREE.Vector3(Math.cos(player.rotation),
@@ -37,7 +36,7 @@ export class Camera {
         this.main.rotateZ(this.cameraRoll);
     }
 
-    static DISTANCE = 8;
+    static DISTANCE = 6;
     static HEIGHT = 2;
     static LAG_BASE = 20;
     static LAG_DRIFT = 4;

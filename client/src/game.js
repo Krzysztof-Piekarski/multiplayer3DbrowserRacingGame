@@ -10,7 +10,7 @@ import * as THREE from 'three';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
 
 const INTERPOLATION_DELAY = 100;
-const MAX_LOCAL_PREDICTION = 4;
+const MAX_LOCAL_PREDICTION = 3;
 
 let statsVisible = false;
 
@@ -24,7 +24,7 @@ export function startGame({ scene, renderer } = {}) {
     const players = new Map();
 
     socket.on('initPlayer', (data) => {
-        player = new Player(data.id, 0xb8b806);
+        player = new Player(data.id, 2);
         console.log(`Initialized player with id: ${player.getPlayerId()}`);
         players.set(data.id, player);
         scene.add(player.mesh);

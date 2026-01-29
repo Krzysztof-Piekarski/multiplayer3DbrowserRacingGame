@@ -1,7 +1,7 @@
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 export const loader = new GLTFLoader();
 
-export async function loadModels(scene) {
+export async function loadRoute(scene) {
     return new Promise((resolve) => {
         loader.load(
             "./resources/models/ParisRace.glb",
@@ -22,7 +22,7 @@ export async function loadModels(scene) {
                 console.log((xhr.loaded / xhr.total * 100) + '% loaded');
             },
             function(error){
-                console.error(error);
+                console.error('Race route failed to load', error);
                 resolve();
             }
         );

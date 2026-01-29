@@ -1,7 +1,8 @@
 import * as THREE from 'three';
+import { loader } from './loader.js';
 
 export class Player {
-    constructor(id, color = 0x188ec4) {
+    constructor(id, version = 1) {
         this.id = id;
         this.position = new THREE.Vector3(0, 0, 0);
         this.rotation = 0;
@@ -11,14 +12,47 @@ export class Player {
         this.renderPosition = new THREE.Vector3(0, 0, 0);
         this.renderRotation = 0;
 
-        this.geometry = new THREE.BoxGeometry(2,1,1);
-        this.material = new THREE.MeshStandardMaterial({ color: color });
-        this.mesh = new THREE.Mesh(this.geometry, this.material);
-        this.mesh.castShadow = true;
-        this.mesh.receiveShadow = true;
+        this.mesh = this.loadMesh(version);
 
         this.lastProcessedInput = 0;
         this.mesh.position.copy(this.position);
+    }
+
+    loadMesh(version){
+        let patch = './resources/models/ford.glb';
+        const loadScale = new THREE.Vector3(1,1,1);
+        const loadPosition = new THREE.Vector3(0,-0.2,0);
+        let loadRotation = -Math.PI/2
+        const group = new THREE.Group();
+
+       if(version === 2){
+            patch = './resources/models/cyberpunk_car.glb';
+            loadScale.set(0.01, 0.01, 0.01)
+            loadPosition.set(0,-0.3,0)
+       }
+
+        loader.load(
+            `${patch}`,
+            function(gltf){
+                gltf.scene.scale.copy(loadScale);
+                gltf.scene.position.copy(loadPosition);
+                gltf.scene.rotateY(loadRotation);
+                const model = gltf.scene;
+                model.traverse(function(node){
+                    if(node.isMesh){
+                        node.castShadow = true;
+                        node.receiveShadow = true;
+                    }
+                });
+                group.add(model);
+            },
+            undefined,
+            function(error){
+                console.error('Player\'s car failed to load', error);
+            }
+        );
+
+        return group;
     }
 
     getPlayerId() {
