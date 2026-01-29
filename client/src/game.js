@@ -1,26 +1,17 @@
 import { io } from 'socket.io-client';
-import { createCamera } from './camera.js';
+import { Camera } from './camera.js';
+import { Set } from './settings.js';
 import { createLights } from './lights.js';
 import { Input } from './input.js';
 import { Player } from './player.js';
-import { moveTowards} from './helpers.js';
+import * as HELPERS from './helpers.js';
 import { SnapshotsBuffer } from './snapshotsBuffer.js';
 import * as THREE from 'three';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
 
-const TICK_RATE = 20;
 const INTERPOLATION_DELAY = 100;
 const MAX_LOCAL_PREDICTION = 4;
 
-const MAX_SPEED = 20;
-const ACCELERATION = 10;
-const FRICTION = 5;
-const TURN_RATE = 2.5;
-const RESPONSE = 10;
-
-const CAMERA_DISTANCE = 6;
-const CAMERA_HEIGHT = 4;
-const CAMERA_LERP = 0.14;
 let statsVisible = false;
 
 export function startGame({ scene, renderer } = {}) {
@@ -39,11 +30,11 @@ export function startGame({ scene, renderer } = {}) {
         scene.add(player.mesh);
     });
 
-    const camera = createCamera();
     const lights = createLights();
     const light = lights.light;
     const dirLight = lights.dirLight;
     scene.add(light, dirLight);
+    const camera = new Camera();
 
     const input = new Input();
     window.addEventListener('keydown', e => {if (e.key.toLowerCase() === 'w') input.setForward(true);
@@ -83,7 +74,7 @@ export function startGame({ scene, renderer } = {}) {
 
                     pendingInputs.forEach(inputPack => {
                         const input = inputPack.input;
-                        simulatePlayer(input, 1 / TICK_RATE);
+                        simulatePlayer(input, 1 / Set.TICK_RATE);
                     });
                 }
             } else {
@@ -125,28 +116,28 @@ export function startGame({ scene, renderer } = {}) {
     }
 
     function simulatePlayer(input, dt) {
-        player.throttle += (input.throttle - player.throttle) * RESPONSE * dt;
-        player.steer += (input.steer - player.steer) * RESPONSE * dt;
+        player.throttle += (input.throttle - player.throttle) * Set.RESPONSE * dt;
+        player.steer += (input.steer - player.steer) * Set.RESPONSE * dt;
 
         let targetSpeed = 0;
 
         if (player.throttle > 0) {
-            targetSpeed = MAX_SPEED * player.throttle;
+            targetSpeed = Set.MAX_SPEED * player.throttle;
         } else if (player.throttle < 0) {
-            targetSpeed = -MAX_SPEED * -player.throttle;
+            targetSpeed = -Set.MAX_SPEED * -player.throttle;
         }
 
-        const acceleration = Math.abs(targetSpeed) > Math.abs(player.velocity) ? ACCELERATION : FRICTION;
+        const acceleration = Math.abs(targetSpeed) > Math.abs(player.velocity) ? Set.ACCELERATION : Set.FRICTION;
 
-        player.velocity = moveTowards(player.velocity, targetSpeed, acceleration*dt);
+        player.velocity = HELPERS.moveTowards(player.velocity, targetSpeed, acceleration*dt);
 
-        let turnRate = TURN_RATE;
+        let turnRate = Set.TURN_RATE;
         if(input.handbrake){
             turnRate *= 2;
             player.velocity *= 0.95;
         }
 
-        const speedFactor = Math.min(Math.abs(player.velocity) / MAX_SPEED, 1);
+        const speedFactor = Math.min(Math.abs(player.velocity) / Set.MAX_SPEED, 1);
         const direction = Math.sign(player.velocity) || 1;
         player.rotation += player.steer * turnRate * speedFactor * dt * direction;
 
@@ -184,43 +175,31 @@ export function startGame({ scene, renderer } = {}) {
     document.body.appendChild(stats.dom);
     stats.dom.style.display = 'none';
 
-    function updateCamera(){
-        const forward = new THREE.Vector3(
-        Math.cos(player.renderRotation), 0, Math.sin(player.renderRotation));
-
-        const desiredCameraPos = player.mesh.position.clone()
-        .addScaledVector(forward, -CAMERA_DISTANCE)
-        .add(new THREE.Vector3(0, CAMERA_HEIGHT, 0));
-
-        camera.position.lerp(desiredCameraPos, CAMERA_LERP);
-        camera.lookAt(player.mesh.position);
-    }
-
     let lastPredictionTime = 0;
-    const TICK_MS = 1000 / TICK_RATE;
+    const TICK_MS = 1000 / Set.TICK_RATE;
 
     function animate(time) {
         if(player && serverStartSendingSnapshots && time - lastPredictionTime >= TICK_MS){
-            playerPrediction(1 / TICK_RATE);
+            playerPrediction(1 / Set.TICK_RATE);
             lastPredictionTime += TICK_MS;
         }
 
         interpolate();
         if(player) {
             player.render();
-            updateCamera();
+            camera.update(1/60, player);
         }
 
         if(statsVisible) {
             stats.update();
         }
-        renderer.render(scene, camera);
+        renderer.render(scene, camera.main);
         requestAnimationFrame(animate);
     }
 
     window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
+        camera.main.aspect = window.innerWidth / window.innerHeight;
+        camera.main.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
     });
 

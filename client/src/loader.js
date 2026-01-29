@@ -4,10 +4,10 @@ export const loader = new GLTFLoader();
 export async function loadModels(scene) {
     return new Promise((resolve) => {
         loader.load(
-            "./resources/models/city.glb",
+            "./resources/models/ParisRace.glb",
             function(gltf){
-                gltf.scene.scale.set(0.01,0.01,0.01);
-                gltf.scene.position.set(0,-2.2,0);
+                gltf.scene.scale.set(100,100,100);
+                gltf.scene.position.set(0,-0.4,0);
                 const city = gltf.scene;
                 city.traverse(function(node){
                     if(node.isMesh){

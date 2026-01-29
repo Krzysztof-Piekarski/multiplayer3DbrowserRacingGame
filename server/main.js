@@ -1,16 +1,11 @@
 import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
-import { moveTowards } from '../client/src/helpers.js';
+import { Set } from '../client/src/settings.js';
+import * as HELPERS from '../client/src/helpers.js';
 
 const PORT = 3000;
 const clientPORT = 888;
-
-const MAX_SPEED = 20;
-const ACCELERATION = 10;
-const FRICTION = 5;
-const TURN_RATE = 2.5;
-const RESPONSE = 10;
 
 const app = express();
 const server = createServer(app);
@@ -20,7 +15,6 @@ const io = new Server(server, {
     }
 });
 
-const TICK_RATE = 20;
 const players = new Map();
 const inputQueue = new Map();
 let tick = 0;
@@ -29,7 +23,7 @@ io.on('connection', (socket) => {
     console.log(`New player connected: ${socket.id}`);
     socket.emit('welcome', { message: `Connected to 3D multiplayer browser racing game! Your id: ${socket.id}`});
     console.log(`Number of active players: ${io.engine.clientsCount}`);
-    players.set(socket.id, { id: socket.id, position: { x: 0, y: 0, z: 0 }, 
+    players.set(socket.id, { id: socket.id, position: { x: 470, y: 0, z: -4 }, 
                 velocity: 0, rotation: 0, throttle: 0, steer: 0, lastProcessedInput: 0 });
     inputQueue.set(socket.id, []);
     socket.emit('initPlayer', { id: socket.id });
@@ -53,28 +47,28 @@ To start game open http://localhost:${clientPORT} in your browser.`);
 
 function simulatePlayer(player, inputPack, dt) {
     const input = inputPack.input;
-    player.throttle += (input.throttle - player.throttle) * RESPONSE * dt;
-    player.steer += (input.steer - player.steer) * RESPONSE * dt;
+    player.throttle += (input.throttle - player.throttle) * Set.RESPONSE * dt;
+    player.steer += (input.steer - player.steer) * Set.RESPONSE * dt;
 
     let targetSpeed = 0;
     
     if (input.throttle > 0) {
-        targetSpeed = MAX_SPEED * input.throttle;
+        targetSpeed = Set.MAX_SPEED * input.throttle;
     } else if (input.throttle < 0) {
-        targetSpeed = -MAX_SPEED * -input.throttle;
+        targetSpeed = -Set.MAX_SPEED * -input.throttle;
     }
 
-    const acceleration = Math.abs(targetSpeed) > Math.abs(player.velocity) ? ACCELERATION : FRICTION;
+    const acceleration = Math.abs(targetSpeed) > Math.abs(player.velocity) ? Set.ACCELERATION : Set.FRICTION;
 
-    player.velocity = moveTowards(player.velocity, targetSpeed, acceleration*dt);
+    player.velocity = HELPERS.moveTowards(player.velocity, targetSpeed, acceleration*dt);
 
-    let turnRate = TURN_RATE;
+    let turnRate = Set.TURN_RATE;
     if(input.handbrake){
         turnRate *= 2;
         player.velocity *= 0.95;
     }
 
-    const speedFactor = Math.min(Math.abs(player.velocity) / MAX_SPEED, 1);
+    const speedFactor = Math.min(Math.abs(player.velocity) / Set.MAX_SPEED, 1);
     const direction = Math.sign(player.velocity) || 1;
     player.rotation += player.steer * turnRate * speedFactor * dt * direction;
 
@@ -90,7 +84,7 @@ setInterval(() => {
         const inputPacks = inputQueue.get(playerId);
         while (inputPacks.length > 0) {
             const inputPack = inputPacks.shift();
-            simulatePlayer(player, inputPack, 1 / TICK_RATE);
+            simulatePlayer(player, inputPack, 1 / Set.TICK_RATE);
             player.lastProcessedInput = inputPack.seq;
         }
     }
@@ -98,4 +92,4 @@ setInterval(() => {
     const snapshot = { tick, serverTime: Date.now(), players: Array.from(players.values()) };
     io.sockets.emit('snapshot', snapshot);
     tick++;
-}, 1000 / TICK_RATE);
+}, 1000 / Set.TICK_RATE);

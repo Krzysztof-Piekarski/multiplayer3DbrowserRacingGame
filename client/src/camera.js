@@ -1,8 +1,46 @@
 import * as THREE from 'three';
+import { Set } from './settings.js';
 
-export function createCamera() {
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.set(7, 1, 0);
-    camera.lookAt(0, 0, 0);
-    return camera;
+export class Camera {
+    constructor(){
+        this.main = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        this.cameraTarget = new THREE.Vector3();
+        this.cameraPosition = new THREE.Vector3();
+        this.cameraRoll = 0;
+    }
+
+    update(dt = 1/60, player){
+        const forward = new THREE.Vector3(
+        Math.cos(player.renderRotation), 0, Math.sin(player.renderRotation));
+        
+        const desiredCameraPos = player.renderPosition.clone()
+        .addScaledVector(forward, -Camera.DISTANCE);
+
+        const speedFactor = Math.min(Math.abs(player.velocity) / Set.MAX_SPEED, 1);
+        desiredCameraPos.y += Camera.HEIGHT + speedFactor * 0.8;
+
+        const velocityDirection = new THREE.Vector3(Math.cos(player.rotation),
+                            0, Math.sin(player.rotation));
+        const driftAmount = 1 - forward.dot(velocityDirection);
+        const lag = Camera.LAG_BASE - driftAmount * Camera.LAG_DRIFT;
+
+        this.cameraPosition.lerp(desiredCameraPos, 1 - Math.exp(-dt * lag));
+        this.cameraTarget.lerp(player.renderPosition.clone().addScaledVector(forward, 2),
+                            1 - Math.exp(-dt * 10));
+
+        const targetRoll = -player.steer * Camera.ROLL_MAX * speedFactor;
+        this.cameraRoll += (targetRoll - this.cameraRoll) * Camera.ROLL_RESPONSE * dt;
+
+        this.main.position.copy(this.cameraPosition);
+        this.main.lookAt(this.cameraTarget);
+        this.main.up.set(0, 1, 0);
+        this.main.rotateZ(this.cameraRoll);
+    }
+
+    static DISTANCE = 8;
+    static HEIGHT = 2;
+    static LAG_BASE = 20;
+    static LAG_DRIFT = 4;
+    static ROLL_MAX = THREE.MathUtils.degToRad(24);
+    static ROLL_RESPONSE = 4;
 }
