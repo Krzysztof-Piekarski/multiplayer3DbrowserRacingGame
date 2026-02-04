@@ -23,8 +23,8 @@ io.on('connection', (socket) => {
     console.log(`New player connected: ${socket.id}`);
     socket.emit('welcome', { message: `Connected to 3D multiplayer browser racing game! Your id: ${socket.id}`});
     console.log(`Number of active players: ${io.engine.clientsCount}`);
-    players.set(socket.id, { id: socket.id, position: { x: 470, y: 0, z: -4 }, 
-                velocity: 0, rotation: 0, throttle: 0, steer: 0, lastProcessedInput: 0 });
+    players.set(socket.id, { id: socket.id, position: { x: -10, y: 0, z: 0 }, 
+                velocity: 0, rotation: -1.25, throttle: 0, steer: 0, lastProcessedInput: 0 });
     inputQueue.set(socket.id, []);
     socket.emit('initPlayer', { id: socket.id });
 

@@ -1,10 +1,11 @@
 import { createRenderer } from './renderer.js';
 import { createScene } from './scene.js';
-import { loadRoute } from './loader.js';
+import * as Loader from './loader.js';
 import { startGame } from './game.js';
 
 const renderer = createRenderer();
 const scene = createScene();
-await loadRoute(scene);
+await Loader.loadCity(scene);
+await Loader.loadRoad(scene);
 
 const game = startGame({ renderer, scene });

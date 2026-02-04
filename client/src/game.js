@@ -8,9 +8,10 @@ import * as HELPERS from './helpers.js';
 import { SnapshotsBuffer } from './snapshotsBuffer.js';
 import * as THREE from 'three';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
+import { loadRoadCurve } from './loader.js';
 
 const INTERPOLATION_DELAY = 100;
-const MAX_LOCAL_PREDICTION = 3;
+const MAX_LOCAL_PREDICTION = 4;
 
 let statsVisible = false;
 
@@ -93,6 +94,8 @@ export function startGame({ scene, renderer } = {}) {
             players.delete(playerId);
         }
     });
+
+    const roadCurve = loadRoadCurve(scene);
 
     const pendingInputs = [];
     let inputSequence = 0;
