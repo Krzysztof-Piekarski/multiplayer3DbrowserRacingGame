@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { loader } from './loader.js';
+import { Set } from '../../shared/settings.js';
 
 export class Player {
     constructor(id, version = 1) {
@@ -9,8 +10,11 @@ export class Player {
         this.velocity = 0;
         this.throttle = 0;
         this.steer = 0;
+
         this.renderPosition = new THREE.Vector3(0, 0, 0);
         this.renderRotation = 0;
+
+        this.actualSegment = 0;
 
         this.mesh = this.loadMesh(version);
 
@@ -21,14 +25,14 @@ export class Player {
     loadMesh(version){
         let patch = './resources/models/ford.glb';
         const loadScale = new THREE.Vector3(1,1,1);
-        const loadPosition = new THREE.Vector3(0,-0.2,0);
+        const loadPosition = new THREE.Vector3(0, Set.ROAD_Y ,0);
         let loadRotation = -Math.PI/2
         const group = new THREE.Group();
 
        if(version === 2){
             patch = './resources/models/cyberpunk_car.glb';
             loadScale.set(0.01, 0.01, 0.01)
-            loadPosition.set(0,-0.3,0)
+            loadPosition.set(0, Set.ROAD_Y ,0)
        }
 
         loader.load(

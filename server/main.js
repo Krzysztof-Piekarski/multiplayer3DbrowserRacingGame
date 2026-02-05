@@ -1,8 +1,8 @@
 import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
-import { Set } from '../client/src/settings.js';
-import * as HELPERS from '../client/src/helpers.js';
+import { Set } from '../shared/settings.js';
+import * as HELPERS from '../shared/helpers.js';
 
 const PORT = 3000;
 const clientPORT = 888;
@@ -23,8 +23,8 @@ io.on('connection', (socket) => {
     console.log(`New player connected: ${socket.id}`);
     socket.emit('welcome', { message: `Connected to 3D multiplayer browser racing game! Your id: ${socket.id}`});
     console.log(`Number of active players: ${io.engine.clientsCount}`);
-    players.set(socket.id, { id: socket.id, position: { x: -10, y: 0, z: 0 }, 
-                velocity: 0, rotation: -1.25, throttle: 0, steer: 0, lastProcessedInput: 0 });
+    players.set(socket.id, { id: socket.id, position: { x: -263, y: Set.ROAD_Y, z: 291 }, 
+                velocity: 0, rotation: -1.25, throttle: 0, steer: 0, actualSegment: 0, lastProcessedInput: 0 });
     inputQueue.set(socket.id, []);
     socket.emit('initPlayer', { id: socket.id });
 

@@ -1,21 +1,21 @@
 import { io } from 'socket.io-client';
 import { Camera } from './camera.js';
-import { Set } from './settings.js';
+import { Set } from '../../shared/settings.js';
 import { createLights } from './lights.js';
 import { Input } from './input.js';
 import { Player } from './player.js';
-import * as HELPERS from './helpers.js';
+import { RoadClient } from './roadClient.js';
+import * as HELPERS from '../../shared/helpers.js';
 import { SnapshotsBuffer } from './snapshotsBuffer.js';
 import * as THREE from 'three';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
-import { loadRoadCurve } from './loader.js';
 
 const INTERPOLATION_DELAY = 100;
 const MAX_LOCAL_PREDICTION = 4;
 
 let statsVisible = false;
 
-export function startGame({ scene, renderer } = {}) {
+export async function startGame({ scene, renderer } = {}) {
     const socket = io('http://localhost:3000');
     socket.on('welcome', (data) => {
         console.log(data.message);
@@ -57,6 +57,8 @@ export function startGame({ scene, renderer } = {}) {
 
     let serverStartSendingSnapshots = false;
     let snapshotsBuffer = new SnapshotsBuffer();
+    const pendingInputs = [];
+    let inputSequence = 0;
 
     socket.on('snapshot', (snapshot) => {
         snapshotsBuffer.add(snapshot);
@@ -95,10 +97,10 @@ export function startGame({ scene, renderer } = {}) {
         }
     });
 
-    const roadCurve = loadRoadCurve(scene);
-
-    const pendingInputs = [];
-    let inputSequence = 0;
+    const road = new RoadClient();
+    const points = await HELPERS.loadSampledPointsFromRoadCurve('./resources/models/sampledRoadCurve.json');
+    road.initFromSampledPoints(points);
+    //road.drawDebugLine(scene);
 
     function playerPrediction(dt){
         if (!player) return;
@@ -190,12 +192,22 @@ export function startGame({ scene, renderer } = {}) {
         interpolate();
         if(player) {
             player.render();
-            camera.update(1/60, player);
+            camera.update(1/60, player, road.isGrounded(player));
+            console.log(player.actualSegment);
         }
 
         if(statsVisible) {
             stats.update();
         }
+
+        if(player){
+            if(road.isGrounded(player)){
+                player.mesh.position.y = Set.ROAD_Y;
+            }else{
+                player.mesh.position.y = -2;
+            }
+        }
+
         renderer.render(scene, camera.main);
         requestAnimationFrame(animate);
     }

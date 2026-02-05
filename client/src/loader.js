@@ -1,4 +1,3 @@
-import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 export const loader = new GLTFLoader();
 
@@ -57,33 +56,3 @@ export async function loadRoad(scene){
         );
     });
 }
-
-export async function loadRoadCurve(scene){
-        const patch = await fetch('./resources/models/roadCurve.json');
-        const data = await patch.json();
-        const drawGreenDebugLineInRoad = true;
-
-        const rawPoints = data.points.map(
-            p => new THREE.Vector3(p[0], 0, -p[1])
-        );
-
-        const curve = new THREE.CatmullRomCurve3(
-            rawPoints,
-            data.closed,
-            'catmullrom',
-            0.0
-        );
-
-        if(drawGreenDebugLineInRoad){
-            const sampledCurve = curve.getPoints(400);
-
-            const geometry = new THREE.BufferGeometry().setFromPoints(sampledCurve);
-            const material = new THREE.LineBasicMaterial({
-                color: 0x00ff22
-            });
-            const line = new THREE.Line(geometry, material);
-            scene.add(line);
-        }
-
-        return curve;
-    }

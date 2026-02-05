@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Set } from './settings.js';
+import { Set } from '../../shared/settings.js';
 
 export class Camera {
     constructor(){
@@ -9,7 +9,7 @@ export class Camera {
         this.cameraRoll = 0;
     }
 
-    update(dt = 1/60, player){
+    update(dt = 1/60, player, isGrounded){
         const forward = new THREE.Vector3(
         Math.cos(player.renderRotation), 0, Math.sin(player.renderRotation));
         const speedFactor = Math.min(Math.abs(player.velocity) / Set.MAX_SPEED, 1);
@@ -27,10 +27,15 @@ export class Camera {
         this.cameraTarget.lerp(player.renderPosition.clone().addScaledVector(forward, 2),
                             1 - Math.exp(-dt * 10));
 
-        const targetRoll = -player.steer * Camera.ROLL_MAX * speedFactor;
+        let targetRoll = 0;
+        if(isGrounded){
+            targetRoll = -player.steer * Camera.ROLL_MAX * speedFactor;
+        }                    
         this.cameraRoll += (targetRoll - this.cameraRoll) * Camera.ROLL_RESPONSE * dt;
-
-        this.main.position.copy(this.cameraPosition);
+                
+        if(isGrounded){
+            this.main.position.copy(this.cameraPosition);
+        }
         this.main.lookAt(this.cameraTarget);
         this.main.up.set(0, 1, 0);
         this.main.rotateZ(this.cameraRoll);
