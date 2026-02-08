@@ -3,9 +3,10 @@ import { Set } from '../../shared/settings.js';
 
 export class Camera {
     constructor(){
-        this.main = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         this.cameraTarget = new THREE.Vector3();
-        this.cameraPosition = new THREE.Vector3();
+        this.cameraPosition = new THREE.Vector3(Set.INIT_X_POS, 0, Set.INIT_Z_POS);
+        this.main = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        this.main.position.copy(this.cameraPosition);
         this.cameraRoll = 0;
     }
 

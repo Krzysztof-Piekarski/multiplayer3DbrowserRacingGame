@@ -37,22 +37,22 @@ export async function startGame({ scene, renderer } = {}) {
     scene.add(light, dirLight);
     const camera = new Camera();
 
-    const input = new Input();
-    window.addEventListener('keydown', e => {if (e.key.toLowerCase() === 'w') input.setForward(true);
-                                        else if (e.key.toLowerCase() === 's') input.setBackward(true);
-                                        else if (e.key.toLowerCase() === 'a') input.setLeft(true);
-                                        else if (e.key.toLowerCase() === 'd') input.setRight(true);
-                                        else if (e.key.toLowerCase() === ' ') input.setHandbrake(true);
+    const localInput = new Input();
+    window.addEventListener('keydown', e => {if (e.key.toLowerCase() === 'w') localInput.setForward(true);
+                                        else if (e.key.toLowerCase() === 's') localInput.setBackward(true);
+                                        else if (e.key.toLowerCase() === 'a') localInput.setLeft(true);
+                                        else if (e.key.toLowerCase() === 'd') localInput.setRight(true);
+                                        else if (e.key.toLowerCase() === ' ') localInput.setHandbrake(true);
                                         else if (e.key.toLowerCase() === 'p') {
                                             statsVisible = !statsVisible;
                                             stats.dom.style.display = statsVisible ? 'block' : 'none';
                                         }
     });
-    window.addEventListener('keyup', e => {if (e.key.toLowerCase() === 'w') input.setForward(false);
-                                        else if (e.key.toLowerCase() === 's') input.setBackward(false);
-                                        else if (e.key.toLowerCase() === 'a') input.setLeft(false);
-                                        else if (e.key.toLowerCase() === 'd') input.setRight(false);
-                                        else if (e.key.toLowerCase() === ' ') input.setHandbrake(false);
+    window.addEventListener('keyup', e => {if (e.key.toLowerCase() === 'w') localInput.setForward(false);
+                                        else if (e.key.toLowerCase() === 's') localInput.setBackward(false);
+                                        else if (e.key.toLowerCase() === 'a') localInput.setLeft(false);
+                                        else if (e.key.toLowerCase() === 'd') localInput.setRight(false);
+                                        else if (e.key.toLowerCase() === ' ') localInput.setHandbrake(false);
     });
 
     let serverStartSendingSnapshots = false;
@@ -67,9 +67,15 @@ export async function startGame({ scene, renderer } = {}) {
             if (p) {
                 if (p.id === player.id) {
                     serverStartSendingSnapshots = true;
-                    player.updatePosition(playerData.position);
-                    player.velocity = playerData.velocity;
-                    player.rotation = playerData.rotation;
+                    player.isGrounded = playerData.isGrounded;
+                    player.falling = playerData.falling;
+
+                    if(!player.falling){
+                        player.updatePosition(playerData.position);
+                        player.velocity = playerData.velocity;
+                        player.velocityY = playerData.velocityY;
+                        player.rotation = playerData.rotation;
+                    }
 
                     while (pendingInputs.length && pendingInputs[0].seq <= playerData.lastProcessedInput) {
                         pendingInputs.shift();
@@ -98,7 +104,7 @@ export async function startGame({ scene, renderer } = {}) {
     });
 
     const road = new RoadClient();
-    const points = await HELPERS.loadSampledPointsFromRoadCurve('./resources/models/sampledRoadCurve.json');
+    const points = await HELPERS.loadSampledPointsFromRoadCurveClient();
     road.initFromSampledPoints(points);
     //road.drawDebugLine(scene);
 
@@ -111,7 +117,7 @@ export async function startGame({ scene, renderer } = {}) {
 
         const inputPack = {
             seq: inputSequence++,
-            input: input.getInput(),
+            input: localInput.getInput(),
         };
         pendingInputs.push(inputPack);
 
@@ -121,30 +127,43 @@ export async function startGame({ scene, renderer } = {}) {
     }
 
     function simulatePlayer(input, dt) {
-        player.throttle += (input.throttle - player.throttle) * Set.RESPONSE * dt;
-        player.steer += (input.steer - player.steer) * Set.RESPONSE * dt;
+        if(player.isGrounded){
+            player.isGrounded = road.isGrounded(player);
 
-        let targetSpeed = 0;
+            player.throttle += (input.throttle - player.throttle) * Set.RESPONSE * dt;
+            player.steer += (input.steer - player.steer) * Set.RESPONSE * dt;
 
-        if (player.throttle > 0) {
-            targetSpeed = Set.MAX_SPEED * player.throttle;
-        } else if (player.throttle < 0) {
-            targetSpeed = -Set.MAX_SPEED * -player.throttle;
+            let targetSpeed = 0;
+
+            if (player.throttle > 0) {
+                targetSpeed = Set.MAX_SPEED * player.throttle;
+            } else if (player.throttle < 0) {
+                targetSpeed = -Set.MAX_SPEED * -player.throttle;
+            }
+
+            const acceleration = Math.abs(targetSpeed) > Math.abs(player.velocity) ? Set.ACCELERATION : Set.FRICTION;
+
+            player.velocity = HELPERS.moveTowards(player.velocity, targetSpeed, acceleration*dt);
+
+            let turnRate = Set.TURN_RATE;
+            if(input.handbrake){
+                turnRate *= 2;
+                player.velocity *= 0.95;
+            }
+
+            const speedFactor = Math.min(Math.abs(player.velocity) / Set.MAX_SPEED, 1);
+            const direction = Math.sign(player.velocity) || 1;
+            player.rotation += player.steer * turnRate * speedFactor * dt * direction;
         }
 
-        const acceleration = Math.abs(targetSpeed) > Math.abs(player.velocity) ? Set.ACCELERATION : Set.FRICTION;
 
-        player.velocity = HELPERS.moveTowards(player.velocity, targetSpeed, acceleration*dt);
+        if(player.falling){
+            player.velocityY -= Set.GRAVITY * dt;
+            player.position.y += player.velocityY * dt;
 
-        let turnRate = Set.TURN_RATE;
-        if(input.handbrake){
-            turnRate *= 2;
-            player.velocity *= 0.95;
+            player.fallPitch += player.fallPitch * dt;
+            player.fallRoll += player.fallRoll * dt;
         }
-
-        const speedFactor = Math.min(Math.abs(player.velocity) / Set.MAX_SPEED, 1);
-        const direction = Math.sign(player.velocity) || 1;
-        player.rotation += player.steer * turnRate * speedFactor * dt * direction;
 
         player.position.x += Math.cos(player.rotation) * player.velocity * dt;
         player.position.z += Math.sin(player.rotation) * player.velocity * dt;
@@ -192,20 +211,11 @@ export async function startGame({ scene, renderer } = {}) {
         interpolate();
         if(player) {
             player.render();
-            camera.update(1/60, player, road.isGrounded(player));
-            console.log(player.actualSegment);
+            camera.update(1/60, player, player.isGrounded);
         }
 
         if(statsVisible) {
             stats.update();
-        }
-
-        if(player){
-            if(road.isGrounded(player)){
-                player.mesh.position.y = Set.ROAD_Y;
-            }else{
-                player.mesh.position.y = -2;
-            }
         }
 
         renderer.render(scene, camera.main);

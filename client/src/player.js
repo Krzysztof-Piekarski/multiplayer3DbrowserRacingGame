@@ -5,9 +5,10 @@ import { Set } from '../../shared/settings.js';
 export class Player {
     constructor(id, version = 1) {
         this.id = id;
-        this.position = new THREE.Vector3(0, 0, 0);
+        this.position = new THREE.Vector3(Set.INIT_X_POS, Set.ROAD_Y, Set.INIT_X_POS);
         this.rotation = 0;
         this.velocity = 0;
+        this.velocityY = 0;
         this.throttle = 0;
         this.steer = 0;
 
@@ -15,6 +16,8 @@ export class Player {
         this.renderRotation = 0;
 
         this.actualSegment = 0;
+        this.isGrounded = true;
+        this.falling = false;
 
         this.mesh = this.loadMesh(version);
 

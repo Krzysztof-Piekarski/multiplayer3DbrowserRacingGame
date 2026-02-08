@@ -1,6 +1,8 @@
+import { Set } from './settings.js';
+
 export class Road{
     constructor(){
-        this.roadWidth = 20;
+        this.roadWidth = Set.ROAD_WIDTH;
         this.halfWidthsquare = (this.roadWidth * 0.5) ** 2;
 
         this.sampledPoints = null;
@@ -29,6 +31,10 @@ export class Road{
     }
 
     isGrounded(player){
+        if(player.falling){
+            return false;
+        }
+
         let bestSegment = player.actualSegment;
         let bestDistSq = Infinity;
 
@@ -59,10 +65,24 @@ export class Road{
         }
 
         const isGrounded = bestDistSq <= this.halfWidthsquare;
-
-        if(isGrounded){
-            player.actualSegment = bestSegment;
+        player.actualSegment = bestSegment;
+        if(!isGrounded){
+            player.falling = true;
         }
+
         return isGrounded;
+    }
+
+    getSegmentCenterPos(index){
+        const seg = this.segments[index];
+        return{
+            x: seg.firstX + seg.deltaX * 0.5,
+            z: seg.firstZ + seg.deltaZ * 0.5
+        };
+    }
+
+    getSegmentRotation(index){
+        const seg = this.segments[index];
+        return Math.atan2(seg.deltaZ, seg.deltaX);
     }
 }

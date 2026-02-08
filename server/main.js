@@ -2,6 +2,7 @@ import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { Set } from '../shared/settings.js';
+import { Road } from '../shared/road.js';
 import * as HELPERS from '../shared/helpers.js';
 
 const PORT = 3000;
@@ -23,8 +24,10 @@ io.on('connection', (socket) => {
     console.log(`New player connected: ${socket.id}`);
     socket.emit('welcome', { message: `Connected to 3D multiplayer browser racing game! Your id: ${socket.id}`});
     console.log(`Number of active players: ${io.engine.clientsCount}`);
-    players.set(socket.id, { id: socket.id, position: { x: -263, y: Set.ROAD_Y, z: 291 }, 
-                velocity: 0, rotation: -1.25, throttle: 0, steer: 0, actualSegment: 0, lastProcessedInput: 0 });
+    players.set(socket.id, { id: socket.id,
+                position: { x: Set.INIT_X_POS, y: Set.ROAD_Y, z: Set.INIT_Z_POS }, 
+                velocity: 0, velocityY: 0, rotation: -1.25, throttle: 0, steer: 0,
+                actualSegment: 0, isGrounded: true, falling: false, lastProcessedInput: 0 });
     inputQueue.set(socket.id, []);
     socket.emit('initPlayer', { id: socket.id });
 
@@ -45,35 +48,65 @@ server.listen(PORT, () => {
 To start game open http://localhost:${clientPORT} in your browser.`);
 });
 
+const road = new Road();
+const points = await HELPERS.loadSampledPointsFromRoadCurveServer();
+road.initFromSampledPoints(points);
+
 function simulatePlayer(player, inputPack, dt) {
-    const input = inputPack.input;
-    player.throttle += (input.throttle - player.throttle) * Set.RESPONSE * dt;
-    player.steer += (input.steer - player.steer) * Set.RESPONSE * dt;
+    if(player.isGrounded){
+        player.isGrounded = road.isGrounded(player);
+        const input = inputPack.input;
 
-    let targetSpeed = 0;
-    
-    if (input.throttle > 0) {
-        targetSpeed = Set.MAX_SPEED * input.throttle;
-    } else if (input.throttle < 0) {
-        targetSpeed = -Set.MAX_SPEED * -input.throttle;
+        player.throttle += (input.throttle - player.throttle) * Set.RESPONSE * dt;
+        player.steer += (input.steer - player.steer) * Set.RESPONSE * dt;
+
+        let targetSpeed = 0;
+        
+        if (input.throttle > 0) {
+            targetSpeed = Set.MAX_SPEED * input.throttle;
+        } else if (input.throttle < 0) {
+            targetSpeed = -Set.MAX_SPEED * -input.throttle;
+        }
+
+        const acceleration = Math.abs(targetSpeed) > Math.abs(player.velocity) ? Set.ACCELERATION : Set.FRICTION;
+
+        player.velocity = HELPERS.moveTowards(player.velocity, targetSpeed, acceleration*dt);
+
+        let turnRate = Set.TURN_RATE;
+        if(input.handbrake){
+            turnRate *= 2;
+            player.velocity *= 0.95;
+        }
+
+        const speedFactor = Math.min(Math.abs(player.velocity) / Set.MAX_SPEED, 1);
+        const direction = Math.sign(player.velocity) || 1;
+        player.rotation += player.steer * turnRate * speedFactor * dt * direction;
     }
 
-    const acceleration = Math.abs(targetSpeed) > Math.abs(player.velocity) ? Set.ACCELERATION : Set.FRICTION;
-
-    player.velocity = HELPERS.moveTowards(player.velocity, targetSpeed, acceleration*dt);
-
-    let turnRate = Set.TURN_RATE;
-    if(input.handbrake){
-        turnRate *= 2;
-        player.velocity *= 0.95;
+    if(player.falling){
+        if(player.position.y < Set.RESPAWN_HEIGHT){
+            respawn(player)
+        }else{
+            player.velocityY -= Set.GRAVITY * dt;
+            player.position.y += player.velocityY * dt;
+        }
     }
-
-    const speedFactor = Math.min(Math.abs(player.velocity) / Set.MAX_SPEED, 1);
-    const direction = Math.sign(player.velocity) || 1;
-    player.rotation += player.steer * turnRate * speedFactor * dt * direction;
 
     player.position.x += Math.cos(player.rotation) * player.velocity * dt;
     player.position.z += Math.sin(player.rotation) * player.velocity * dt;
+}
+
+function respawn(player){
+    player.velocity = 0;
+    player.velocityY = 0;
+    player.isGrounded = true;
+    player.falling = false;
+
+    const segPos = road.getSegmentCenterPos(player.actualSegment);
+    player.position.x = segPos.x;
+    player.position.z = segPos.z;
+    player.position.y = Set.ROAD_Y;
+    player.rotation = road.getSegmentRotation(player.actualSegment);
 }
 
 setInterval(() => {
