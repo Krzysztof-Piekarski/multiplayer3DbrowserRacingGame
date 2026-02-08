@@ -70,11 +70,20 @@ export async function startGame({ scene, renderer } = {}) {
                     player.isGrounded = playerData.isGrounded;
                     player.falling = playerData.falling;
 
+                    if(player.falling && !player.startFalling){
+                        player.startFalling = true;
+                        road.computeFallingRollAndPitch(player);
+                    }
+
                     if(!player.falling){
                         player.updatePosition(playerData.position);
                         player.velocity = playerData.velocity;
                         player.velocityY = playerData.velocityY;
                         player.rotation = playerData.rotation;
+
+                        player.fallPitch = 0;
+                        player.fallRoll = 0;
+                        player.startFalling = false;
                     }
 
                     while (pendingInputs.length && pendingInputs[0].seq <= playerData.lastProcessedInput) {
@@ -161,8 +170,8 @@ export async function startGame({ scene, renderer } = {}) {
             player.velocityY -= Set.GRAVITY * dt;
             player.position.y += player.velocityY * dt;
 
-            player.fallPitch += player.fallPitch * dt;
-            player.fallRoll += player.fallRoll * dt;
+            player.fallPitch += player.fallPitchVelocity * dt;
+            player.fallRoll += player.fallRollVelocity * dt;
         }
 
         player.position.x += Math.cos(player.rotation) * player.velocity * dt;
