@@ -85,4 +85,8 @@ export class Road{
         const seg = this.segments[index];
         return Math.atan2(seg.deltaZ, seg.deltaX);
     }
+
+    getLength(){
+        return this.length;
+    }
 }

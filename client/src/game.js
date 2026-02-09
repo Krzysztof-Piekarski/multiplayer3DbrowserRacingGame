@@ -80,10 +80,13 @@ export async function startGame({ scene, renderer } = {}) {
                         player.velocity = playerData.velocity;
                         player.velocityY = playerData.velocityY;
                         player.rotation = playerData.rotation;
+                        player.lap = playerData.lap;
 
                         player.fallPitch = 0;
                         player.fallRoll = 0;
                         player.startFalling = false;
+
+                        player.updateHUD(road.getLength());
                     }
 
                     while (pendingInputs.length && pendingInputs[0].seq <= playerData.lastProcessedInput) {

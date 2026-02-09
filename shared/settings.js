@@ -6,6 +6,7 @@ export class Set{
 
     static ROAD_WIDTH = 21;
     static ROAD_Y = 0.2;
+    static TOTAL_LAPS = 2;
 
     static MAX_SPEED = 30;
     static ACCELERATION = 20;

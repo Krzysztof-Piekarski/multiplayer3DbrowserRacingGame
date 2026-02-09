@@ -27,7 +27,8 @@ io.on('connection', (socket) => {
     players.set(socket.id, { id: socket.id,
                 position: { x: Set.INIT_X_POS, y: Set.ROAD_Y, z: Set.INIT_Z_POS }, 
                 velocity: 0, velocityY: 0, rotation: -1.25, throttle: 0, steer: 0,
-                actualSegment: 0, isGrounded: true, falling: false, lastProcessedInput: 0 });
+                actualSegment: 0, lastSegment: 0, isGrounded: true, falling: false,
+                lastProcessedInput: 0, lap: 0 });
     inputQueue.set(socket.id, []);
     socket.emit('initPlayer', { id: socket.id });
 
@@ -81,6 +82,8 @@ function simulatePlayer(player, inputPack, dt) {
         const speedFactor = Math.min(Math.abs(player.velocity) / Set.MAX_SPEED, 1);
         const direction = Math.sign(player.velocity) || 1;
         player.rotation += player.steer * turnRate * speedFactor * dt * direction;
+
+        updateLapCounter(player, road.getLength());
     }
 
     if(player.falling){
@@ -107,6 +110,15 @@ function respawn(player){
     player.position.z = segPos.z;
     player.position.y = Set.ROAD_Y;
     player.rotation = road.getSegmentRotation(player.actualSegment);
+}
+
+function updateLapCounter(player, roadLength){
+    if (player.lastSegment > roadLength - 10 &&
+        player.actualSegment < 10){
+            player.lap++;
+        }
+
+    player.lastSegment = player.actualSegment;
 }
 
 setInterval(() => {
