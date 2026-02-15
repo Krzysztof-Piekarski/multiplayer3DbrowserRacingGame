@@ -15,5 +15,5 @@ export class Set{
     static RESPONSE = 10;
 
     static GRAVITY = 36;
-    static RESPAWN_HEIGHT = -24;
+    static RESPAWN_HEIGHT = -40;
 }

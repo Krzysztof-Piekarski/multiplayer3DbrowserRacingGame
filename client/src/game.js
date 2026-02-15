@@ -1,5 +1,4 @@
 import { io } from 'socket.io-client';
-import { Camera } from './camera.js';
 import { Set } from '../../shared/settings.js';
 import { createLights } from './lights.js';
 import { Input } from './input.js';
@@ -15,7 +14,7 @@ const MAX_LOCAL_PREDICTION = 4;
 
 let statsVisible = false;
 
-export async function startGame({ scene, renderer } = {}) {
+export async function startGame({ scene, renderer, camera, fx } = {}) {
     const socket = io('http://localhost:3000');
     socket.on('welcome', (data) => {
         console.log(data.message);
@@ -35,7 +34,6 @@ export async function startGame({ scene, renderer } = {}) {
     const light = lights.light;
     const dirLight = lights.dirLight;
     scene.add(light, dirLight);
-    const camera = new Camera();
 
     const localInput = new Input();
     window.addEventListener('keydown', e => {if (e.key.toLowerCase() === 'w') localInput.setForward(true);
@@ -99,7 +97,7 @@ export async function startGame({ scene, renderer } = {}) {
                     });
                 }
             } else {
-                const newPlayer = new Player(playerData.id);
+                const newPlayer = new Player(playerData.id, 2);
                 newPlayer.updatePosition(playerData.position);
                 scene.add(newPlayer.mesh);
                 players.set(playerData.id, newPlayer);
@@ -223,6 +221,7 @@ export async function startGame({ scene, renderer } = {}) {
         interpolate();
         if(player) {
             player.render();
+            fx.updateFromSpeed(player.velocity, Set.MAX_SPEED);
             camera.update(1/60, player, player.isGrounded);
         }
 
@@ -230,14 +229,19 @@ export async function startGame({ scene, renderer } = {}) {
             stats.update();
         }
 
-        renderer.render(scene, camera.main);
+        fx.render();
         requestAnimationFrame(animate);
     }
 
     window.addEventListener('resize', () => {
-        camera.main.aspect = window.innerWidth / window.innerHeight;
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+
+        camera.main.aspect = width / height;
         camera.main.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setSize(width, height);
+
+        fx.resize(width, height);
     });
 
     animate();

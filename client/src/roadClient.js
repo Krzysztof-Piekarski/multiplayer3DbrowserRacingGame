@@ -14,8 +14,8 @@ export class RoadClient extends Road{
         player.fallPitchVel = 0;
         player.fallRollVel = 0;
 
-        player.fallPitchVelocity = player.velocity > 0 ? -1 : 1;
-        player.fallRollVelocity = crossProduct > 0 ? 1.2 : -1.2;
+        player.fallPitchVelocity = player.velocity > 0 ? -1.8 : 1.8;
+        player.fallRollVelocity = crossProduct > 0 ? 1.8 : -1.8;
     }
 
     drawDebugLine(scene){
@@ -24,7 +24,7 @@ export class RoadClient extends Road{
         );
         const geometry = new THREE.BufferGeometry().setFromPoints(points);
         const material = new THREE.LineBasicMaterial({
-            color: 0x00ff22
+            color: 0xcc7777
         });
         const line = new THREE.Line(geometry, material);
         scene.add(line);
