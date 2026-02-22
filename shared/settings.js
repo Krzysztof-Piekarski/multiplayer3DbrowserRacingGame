@@ -14,6 +14,9 @@ export class Set{
     static TURN_RATE = 2;
     static RESPONSE = 10;
 
+    static CAR_DIAMETER = 10;
+    static COLLISION_PUSH = 10;
+
     static GRAVITY = 36;
     static RESPAWN_HEIGHT = -40;
 }

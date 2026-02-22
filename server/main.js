@@ -121,6 +121,45 @@ function updateLapCounter(player, roadLength){
     player.lastSegment = player.actualSegment;
 }
 
+function resolveAllCollisions(){
+    const list = Array.from(players.values());
+
+    for (let i = 0; i < list.length; i++){
+        for (let j = i+1; j < list.length; j++){
+
+            if (carsCollide(list[i], list[j])){
+                resolveCollision(list[i], list[j]);
+            }
+        }
+    }
+}
+
+function carsCollide(a, b){
+    const dx = a.position.x - b.position.x;
+    const dz = a.position.z - b.position.z;
+    const res = dx*dx + dz*dz < Set.CAR_DIAMETER;
+    return res;
+}
+
+function resolveCollision(a, b){
+    const dx = a.position.x - b.position.x;
+    const dz = a.position.z - b.position.z;
+
+    const length = Math.hypot(dx, dz);
+    if (length == 0) return;
+
+    const nx = dx / length;
+    const nz = dz / length;
+
+    a.position.x += nx * Set.COLLISION_PUSH;
+    a.position.z += nz * Set.COLLISION_PUSH;
+    b.position.x -= nx * Set.COLLISION_PUSH;
+    b.position.z -= nz * Set.COLLISION_PUSH;
+
+    a.velocity *= 0.8;
+    b.velocity *= 0.8;
+}
+
 setInterval(() => {
     for (const [playerId, inputPack] of inputQueue.entries()) {
         const player = players.get(playerId);
@@ -133,6 +172,8 @@ setInterval(() => {
             player.lastProcessedInput = inputPack.seq;
         }
     }
+
+    resolveAllCollisions();
 
     const snapshot = { tick, serverTime: Date.now(), players: Array.from(players.values()) };
     io.sockets.emit('snapshot', snapshot);

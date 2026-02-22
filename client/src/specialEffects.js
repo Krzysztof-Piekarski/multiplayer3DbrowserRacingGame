@@ -20,8 +20,7 @@ export function createSpecialEffects(renderer, scene, camera){
     function updateFromSpeed(speed, maxSpeed){
         const t = Math.min(Math.abs(speed) / maxSpeed, 1);
 
-        bloomPass.radius = Math.max(0.05, t);
-        console.log(bloomPass.radius);
+        //bloomPass.radius = Math.max(0.05, t);
     }
 
     function render(){
