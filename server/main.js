@@ -6,13 +6,12 @@ import { Road } from '../shared/road.js';
 import * as HELPERS from '../shared/helpers.js';
 
 const PORT = 3000;
-const clientPORT = 888;
 
 const app = express();
 const server = createServer(app);
 const io = new Server(server, {
     cors: {
-        origin: `http://localhost:${clientPORT}`,
+        origin: "*"
     }
 });
 
@@ -44,10 +43,7 @@ io.on('connection', (socket) => {
     });
 });
 
-server.listen(PORT, () => {
-    console.log(`Server running at http://localhost:${PORT}\n
-To start game open http://localhost:${clientPORT} in your browser.`);
-});
+server.listen(PORT, '0.0.0.0');
 
 const road = new Road();
 const points = await HELPERS.loadSampledPointsFromRoadCurveServer();

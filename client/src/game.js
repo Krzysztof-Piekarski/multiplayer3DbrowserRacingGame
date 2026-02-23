@@ -15,7 +15,7 @@ const MAX_LOCAL_PREDICTION = 4;
 let statsVisible = false;
 
 export async function startGame({ scene, renderer, camera, fx } = {}) {
-    const socket = io('http://localhost:3000');
+    const socket = io(`${window.location.protocol}//${window.location.hostname}:3000`);
     socket.on('welcome', (data) => {
         console.log(data.message);
     });

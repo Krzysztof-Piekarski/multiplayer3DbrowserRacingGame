@@ -1,5 +1,6 @@
 export class Set{
     static TICK_RATE = 20;
+    static RESOLUTION_DOWNGRADE = 2;
 
     static INIT_X_POS = -259.37122094631195;
     static INIT_Z_POS = 280.04290199279785;

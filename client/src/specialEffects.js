@@ -12,7 +12,7 @@ export function createSpecialEffects(renderer, scene, camera){
     const bloomPass = new UnrealBloomPass(
         new THREE.Vector2(window.innerWidth, window.innerHeight),
         1.2, //strength
-        0.3, //radius
+        1.2, //radius
         0.0 //threshold
     );
     effectsComposer.addPass(bloomPass);
