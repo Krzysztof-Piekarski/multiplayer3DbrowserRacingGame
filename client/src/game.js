@@ -2,6 +2,7 @@ import { io } from 'socket.io-client';
 import { Set } from '../../shared/settings.js';
 import { createLights } from './lights.js';
 import { Input } from './input.js';
+import { setupTouchControls } from './touchControls.js';
 import { Player } from './player.js';
 import { RoadClient } from './roadClient.js';
 import * as HELPERS from '../../shared/helpers.js';
@@ -36,11 +37,11 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
     scene.add(light, dirLight);
 
     const localInput = new Input();
+    setupTouchControls(localInput);
     window.addEventListener('keydown', e => {if (e.key.toLowerCase() === 'w') localInput.setForward(true);
                                         else if (e.key.toLowerCase() === 's') localInput.setBackward(true);
                                         else if (e.key.toLowerCase() === 'a') localInput.setLeft(true);
                                         else if (e.key.toLowerCase() === 'd') localInput.setRight(true);
-                                        else if (e.key.toLowerCase() === ' ') localInput.setHandbrake(true);
                                         else if (e.key.toLowerCase() === 'p') {
                                             statsVisible = !statsVisible;
                                             stats.dom.style.display = statsVisible ? 'block' : 'none';
@@ -50,7 +51,6 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
                                         else if (e.key.toLowerCase() === 's') localInput.setBackward(false);
                                         else if (e.key.toLowerCase() === 'a') localInput.setLeft(false);
                                         else if (e.key.toLowerCase() === 'd') localInput.setRight(false);
-                                        else if (e.key.toLowerCase() === ' ') localInput.setHandbrake(false);
     });
 
     let serverStartSendingSnapshots = false;
@@ -155,15 +155,9 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
 
             player.velocity = HELPERS.moveTowards(player.velocity, targetSpeed, acceleration*dt);
 
-            let turnRate = Set.TURN_RATE;
-            if(input.handbrake){
-                turnRate *= 2;
-                player.velocity *= 0.95;
-            }
-
             const speedFactor = Math.min(Math.abs(player.velocity) / Set.MAX_SPEED, 1);
             const direction = Math.sign(player.velocity) || 1;
-            player.rotation += player.steer * turnRate * speedFactor * dt * direction;
+            player.rotation += player.steer * Set.TURN_RATE * speedFactor * dt * direction;
         }
 
 

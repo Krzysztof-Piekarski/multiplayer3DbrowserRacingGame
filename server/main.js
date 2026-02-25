@@ -69,15 +69,9 @@ function simulatePlayer(player, inputPack, dt) {
 
         player.velocity = HELPERS.moveTowards(player.velocity, targetSpeed, acceleration*dt);
 
-        let turnRate = Set.TURN_RATE;
-        if(input.handbrake){
-            turnRate *= 2;
-            player.velocity *= 0.95;
-        }
-
         const speedFactor = Math.min(Math.abs(player.velocity) / Set.MAX_SPEED, 1);
         const direction = Math.sign(player.velocity) || 1;
-        player.rotation += player.steer * turnRate * speedFactor * dt * direction;
+        player.rotation += player.steer * Set.TURN_RATE * speedFactor * dt * direction;
 
         updateLapCounter(player, road.getLength());
     }

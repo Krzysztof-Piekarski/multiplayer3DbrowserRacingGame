@@ -138,6 +138,7 @@ export class Player {
 
     makeHUDvisible(){
         document.getElementById('hud').style.visibility = 'visible';
+        document.getElementById('touch-controls').style.visibility = 'visible';
     }
 
     lerp(first, second, t){

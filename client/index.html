@@ -2,11 +2,24 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
     <title>3D browser racer</title>
     <link rel="icon" type="image/x-icon" href="./favicon.ico">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <div id="touch-controls">
+        <div class="throttle-controls">
+            <button id="forward-btn">▲</button>
+            <button id="backward-btn">▼</button>
+        </div>
+
+        <div class="steer-controls">
+            <button id="left-btn">◀</button>
+            <button id="right-btn">▶</button>
+        </div>
+    </div>
+
     <div id="game-container"></div>
 
     <div id="hud">

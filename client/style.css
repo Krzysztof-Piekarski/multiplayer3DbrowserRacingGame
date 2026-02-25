@@ -4,6 +4,56 @@ body {
     width: 100%;
     height: 100%;
     overflow: hidden;
+    touch-action: none;
+}
+
+#touch-controls {
+    visibility: hidden;
+    position: fixed;
+    bottom: 20px;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 0 30px;
+    pointer-events: none;
+    user-select: none;
+}
+
+#touch-controls button {
+    width: 50px;
+    height: 50px;
+    font-size: 20px;
+    border-radius: 14px;
+    border: 3px solid #404040;
+    background: rgba(255, 255, 255, 0.23);
+    color: #ffffff;
+    backdrop-filter: blur(10px);
+    pointer-events: auto;
+    transition: 0.2s;
+}
+
+#touch-controls button.pressed {
+    background: rgba(255, 255, 255, 0.8);
+    transform: scale(0.86);
+}
+
+.throttle-controls,
+.steer-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.steer-controls {
+    flex-direction: row;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    #touch-controls {
+        display: none;
+    }
 }
 
 #hud {
@@ -49,7 +99,7 @@ body {
 #speed-bar {
     position: absolute;
     right: 4%;
-    bottom: 15%;
+    top: 40%;
     width: 36px;
     height: 200px;
     background: #444;
