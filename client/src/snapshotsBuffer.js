@@ -25,4 +25,9 @@ export class SnapshotsBuffer {
         }
         return null;
     }
+
+    getLatestServerTime(){
+        if (this.snapshots.length === 0) return 0;
+        return this.snapshots[this.snapshots.length - 1].serverTime;
+    }
 }      

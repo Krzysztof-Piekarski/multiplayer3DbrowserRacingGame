@@ -26,8 +26,8 @@ io.on('connection', (socket) => {
     players.set(socket.id, { id: socket.id,
                 position: { x: Set.INIT_X_POS, y: Set.ROAD_Y, z: Set.INIT_Z_POS }, 
                 velocity: 0, velocityY: 0, rotation: -1.25, throttle: 0, steer: 0,
-                actualSegment: 0, lastSegment: 0, isGrounded: true, falling: false,
-                lastProcessedInput: 0, lap: 0 });
+                actualSegment: 0, lastSegment: 0, lap: 0, progress: 0, finish: false,
+                isGrounded: true, falling: false, lastProcessedInput: 0, });
     inputQueue.set(socket.id, []);
     socket.emit('initPlayer', { id: socket.id });
 
@@ -73,7 +73,7 @@ function simulatePlayer(player, inputPack, dt) {
         const direction = Math.sign(player.velocity) || 1;
         player.rotation += player.steer * Set.TURN_RATE * speedFactor * dt * direction;
 
-        updateLapCounter(player, road.getLength());
+        updateRoadProgress(player, road.getLength());
     }
 
     if(player.falling){
@@ -102,13 +102,23 @@ function respawn(player){
     player.rotation = road.getSegmentRotation(player.actualSegment);
 }
 
-function updateLapCounter(player, roadLength){
-    if (player.lastSegment > roadLength - 10 &&
-        player.actualSegment < 10){
+function updateRoadProgress(player, roadLength){
+    if(!player.finish){
+        if (player.lastSegment > roadLength - 10 &&
+        player.actualSegment < 10 && player.lap < Set.TOTAL_LAPS){
             player.lap++;
         }
 
-    player.lastSegment = player.actualSegment;
+        player.lastSegment = player.actualSegment;
+
+        const totalSegments = Set.TOTAL_LAPS * roadLength;
+        player.progress = (player.lap * roadLength + player.actualSegment) / totalSegments;
+
+        if(player.progress > 1){
+            player.finish = true;
+            player.progress = 1;
+        }
+    }
 }
 
 function resolveAllCollisions(){

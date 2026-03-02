@@ -5,13 +5,6 @@ export function moveTowards(current, target, maxDelta) {
     return current + Math.sign(target - current) * maxDelta;
 }
 
-function setUpSampledPointsFromData(data){
-        return data.points.map(p => ({
-        x: p[0],
-        z: p[1]
-    }));
-}
-
 export async function loadSampledPointsFromRoadCurveClient(){
     const file = await fetch('./resources/models/sampledRoadCurve.json');
     const data = await file.json();
@@ -25,4 +18,11 @@ export async function loadSampledPointsFromRoadCurveServer(){
     )
 
     return setUpSampledPointsFromData(data);
+}
+
+function setUpSampledPointsFromData(data){
+        return data.points.map(p => ({
+        x: p[0],
+        z: p[1]
+    }));
 }

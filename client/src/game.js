@@ -4,6 +4,7 @@ import { createLights } from './lights.js';
 import { Input } from './input.js';
 import { setupTouchControls } from './touchControls.js';
 import { Player } from './player.js';
+import { HUD } from './hud.js';
 import { RoadClient } from './roadClient.js';
 import * as HELPERS from '../../shared/helpers.js';
 import { SnapshotsBuffer } from './snapshotsBuffer.js';
@@ -22,10 +23,12 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
     });
 
     let player = null;
+    let hud = null;
     const players = new Map();
 
     socket.on('initPlayer', (data) => {
-        player = new Player(data.id, 2);
+        player = new Player(data.id);
+        hud = new HUD();
         console.log(`Initialized player with id: ${player.getPlayerId()}`);
         players.set(data.id, player);
         scene.add(player.mesh);
@@ -53,18 +56,18 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
                                         else if (e.key.toLowerCase() === 'd') localInput.setRight(false);
     });
 
-    let serverStartSendingSnapshots = false;
+    let tick = 0;
     let snapshotsBuffer = new SnapshotsBuffer();
     const pendingInputs = [];
     let inputSequence = 0;
 
     socket.on('snapshot', (snapshot) => {
+        tick = snapshot.tick;
         snapshotsBuffer.add(snapshot);
         snapshot.players.forEach(playerData => {
             let p = players.get(playerData.id);
             if (p) {
                 if (p.id === player.id) {
-                    serverStartSendingSnapshots = true;
                     player.isGrounded = playerData.isGrounded;
                     player.falling = playerData.falling;
 
@@ -79,12 +82,12 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
                         player.velocityY = playerData.velocityY;
                         player.rotation = playerData.rotation;
                         player.lap = playerData.lap;
+                        player.progress = playerData.progress;
+                        player.finish = playerData.finish;
 
                         player.fallPitch = 0;
                         player.fallRoll = 0;
                         player.startFalling = false;
-
-                        player.updateHUD(road.getLength());
                     }
 
                     while (pendingInputs.length && pendingInputs[0].seq <= playerData.lastProcessedInput) {
@@ -97,12 +100,16 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
                     });
                 }
             } else {
-                const newPlayer = new Player(playerData.id, 2);
+                const newPlayer = new Player(playerData.id);
                 newPlayer.updatePosition(playerData.position);
                 scene.add(newPlayer.mesh);
                 players.set(playerData.id, newPlayer);
             }
         });
+
+        if(tick % 20 === 0){
+            hud.updateRanking(snapshot.players, player.id);
+        }
     });
 
     socket.on('playerDisconnected', (playerId) => {
@@ -174,7 +181,7 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
     }
 
     function interpolate() {
-        const renderTime = Date.now() - INTERPOLATION_DELAY;
+        const renderTime = snapshotsBuffer.getLatestServerTime() - INTERPOLATION_DELAY;
         const snapshots = snapshotsBuffer.getSnapshots(renderTime);
         if (!snapshots) return;
 
@@ -207,7 +214,7 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
     const TICK_MS = 1000 / Set.TICK_RATE;
 
     function animate(time) {
-        if(player && serverStartSendingSnapshots && time - lastPredictionTime >= TICK_MS){
+        if(player && tick !== 0 && time - lastPredictionTime >= TICK_MS){
             playerPrediction(1 / Set.TICK_RATE);
             lastPredictionTime += TICK_MS;
         }
@@ -217,6 +224,7 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
             player.render();
             fx.updateFromSpeed(player.velocity, Set.MAX_SPEED);
             camera.update(1/60, player, player.isGrounded);
+            hud.update(player);
         }
 
         if(statsVisible) {
