@@ -1,10 +1,10 @@
 import * as THREE from 'three';
-import { Set } from '../../shared/settings.js';
+import { Config } from '../../shared/configuration.js';
 
 export class Camera {
     constructor(){
         this.cameraTarget = new THREE.Vector3();
-        this.cameraPosition = new THREE.Vector3(Set.INIT_X_POS, 0, Set.INIT_Z_POS);
+        this.cameraPosition = new THREE.Vector3(Config.INIT_X_POS, 0, Config.INIT_Z_POS);
         this.main = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         this.main.position.copy(this.cameraPosition);
         this.cameraRoll = 0;
@@ -13,7 +13,7 @@ export class Camera {
     update(dt = 1/60, player, isGrounded){
         const forward = new THREE.Vector3(
         Math.cos(player.renderRotation), 0, Math.sin(player.renderRotation));
-        const speedFactor = Math.min(Math.abs(player.velocity) / Set.MAX_SPEED, 1);
+        const speedFactor = Math.min(Math.abs(player.velocity) / Config.MAX_SPEED, 1);
 
         const desiredCameraPos = player.renderPosition.clone()
         .addScaledVector(forward, (-Camera.DISTANCE * speedFactor - Camera.DISTANCE/2));

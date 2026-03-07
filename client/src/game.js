@@ -1,5 +1,5 @@
 import { io } from 'socket.io-client';
-import { Set } from '../../shared/settings.js';
+import { Config } from '../../shared/configuration.js';
 import { createLights } from './lights.js';
 import { Input } from './input.js';
 import { setupTouchControls } from './touchControls.js';
@@ -96,7 +96,7 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
 
                     pendingInputs.forEach(inputPack => {
                         const input = inputPack.input;
-                        simulatePlayer(input, 1 / Set.TICK_RATE);
+                        simulatePlayer(input, 1 / Config.TICK_RATE);
                     });
                 }
             } else {
@@ -147,29 +147,29 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
         if(player.isGrounded){
             player.isGrounded = road.isGrounded(player);
 
-            player.throttle += (input.throttle - player.throttle) * Set.RESPONSE * dt;
-            player.steer += (input.steer - player.steer) * Set.RESPONSE * dt;
+            player.throttle += (input.throttle - player.throttle) * Config.RESPONSE * dt;
+            player.steer += (input.steer - player.steer) * Config.RESPONSE * dt;
 
             let targetSpeed = 0;
 
             if (player.throttle > 0) {
-                targetSpeed = Set.MAX_SPEED * player.throttle;
+                targetSpeed = Config.MAX_SPEED * player.throttle;
             } else if (player.throttle < 0) {
-                targetSpeed = -Set.MAX_SPEED * -player.throttle;
+                targetSpeed = -Config.MAX_SPEED * -player.throttle;
             }
 
-            const acceleration = Math.abs(targetSpeed) > Math.abs(player.velocity) ? Set.ACCELERATION : Set.FRICTION;
+            const acceleration = Math.abs(targetSpeed) > Math.abs(player.velocity) ? Config.ACCELERATION : Config.FRICTION;
 
             player.velocity = HELPERS.moveTowards(player.velocity, targetSpeed, acceleration*dt);
 
-            const speedFactor = Math.min(Math.abs(player.velocity) / Set.MAX_SPEED, 1);
+            const speedFactor = Math.min(Math.abs(player.velocity) / Config.MAX_SPEED, 1);
             const direction = Math.sign(player.velocity) || 1;
-            player.rotation += player.steer * Set.TURN_RATE * speedFactor * dt * direction;
+            player.rotation += player.steer * Config.TURN_RATE * speedFactor * dt * direction;
         }
 
 
         if(player.falling){
-            player.velocityY -= Set.GRAVITY * dt;
+            player.velocityY -= Config.GRAVITY * dt;
             player.position.y += player.velocityY * dt;
 
             player.fallPitch += player.fallPitchVelocity * dt;
@@ -211,18 +211,18 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
     stats.dom.style.display = 'none';
 
     let lastPredictionTime = 0;
-    const TICK_MS = 1000 / Set.TICK_RATE;
+    const TICK_MS = 1000 / Config.TICK_RATE;
 
     function animate(time) {
         if(player && tick !== 0 && time - lastPredictionTime >= TICK_MS){
-            playerPrediction(1 / Set.TICK_RATE);
+            playerPrediction(1 / Config.TICK_RATE);
             lastPredictionTime += TICK_MS;
         }
 
         interpolate();
         if(player) {
             player.render();
-            fx.updateFromSpeed(player.velocity, Set.MAX_SPEED);
+            fx.updateFromSpeed(player.velocity, Config.MAX_SPEED);
             camera.update(1/60, player, player.isGrounded);
             hud.update(player);
         }

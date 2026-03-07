@@ -1,8 +1,8 @@
-import { Set } from './settings.js';
+import { Config } from './configuration.js';
 
 export class Road{
     constructor(){
-        this.roadWidth = Set.ROAD_WIDTH;
+        this.roadWidth = Config.ROAD_WIDTH;
         this.halfWidthsquare = (this.roadWidth * 0.5) ** 2;
 
         this.sampledPoints = null;

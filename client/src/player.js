@@ -1,11 +1,11 @@
 import * as THREE from 'three';
 import { loader } from './loader.js';
-import { Set } from '../../shared/settings.js';
+import { Config } from '../../shared/configuration.js';
 
 export class Player {
     constructor(id, color = 1) {
         this.id = id;
-        this.position = new THREE.Vector3(Set.INIT_X_POS, Set.ROAD_Y, Set.INIT_X_POS);
+        this.position = new THREE.Vector3(Config.INIT_X_POS, Config.ROAD_Y, Config.INIT_X_POS);
         this.rotation = 0;
         this.velocity = 0;
         this.velocityY = 0;
@@ -37,7 +37,7 @@ export class Player {
     loadMesh(color){
         let patch = './resources/models/cyberpunk_car.glb';
         const loadScale = new THREE.Vector3(0.01, 0.01, 0.01)
-        const loadPosition = new THREE.Vector3(0, Set.ROAD_Y ,0)
+        const loadPosition = new THREE.Vector3(0, Config.ROAD_Y ,0)
         let loadRotation = -Math.PI/2
         const group = new THREE.Group();
 

@@ -1,7 +1,7 @@
 import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
-import { Set } from '../shared/settings.js';
+import { Config } from '../shared/configuration.js';
 import { Road } from '../shared/road.js';
 import * as HELPERS from '../shared/helpers.js';
 
@@ -24,7 +24,7 @@ io.on('connection', (socket) => {
     socket.emit('welcome', { message: `Connected to 3D multiplayer browser racing game! Your id: ${socket.id}`});
     console.log(`Number of active players: ${io.engine.clientsCount}`);
     players.set(socket.id, { id: socket.id,
-                position: { x: Set.INIT_X_POS, y: Set.ROAD_Y, z: Set.INIT_Z_POS }, 
+                position: { x: Config.INIT_X_POS, y: Config.ROAD_Y, z: Config.INIT_Z_POS }, 
                 velocity: 0, velocityY: 0, rotation: -1.25, throttle: 0, steer: 0,
                 actualSegment: 0, lastSegment: 0, lap: 0, progress: 0, finish: false,
                 isGrounded: true, falling: false, lastProcessedInput: 0, });
@@ -54,33 +54,33 @@ function simulatePlayer(player, inputPack, dt) {
         player.isGrounded = road.isGrounded(player);
         const input = inputPack.input;
 
-        player.throttle += (input.throttle - player.throttle) * Set.RESPONSE * dt;
-        player.steer += (input.steer - player.steer) * Set.RESPONSE * dt;
+        player.throttle += (input.throttle - player.throttle) * Config.RESPONSE * dt;
+        player.steer += (input.steer - player.steer) * Config.RESPONSE * dt;
 
         let targetSpeed = 0;
         
         if (input.throttle > 0) {
-            targetSpeed = Set.MAX_SPEED * input.throttle;
+            targetSpeed = Config.MAX_SPEED * input.throttle;
         } else if (input.throttle < 0) {
-            targetSpeed = -Set.MAX_SPEED * -input.throttle;
+            targetSpeed = -Config.MAX_SPEED * -input.throttle;
         }
 
-        const acceleration = Math.abs(targetSpeed) > Math.abs(player.velocity) ? Set.ACCELERATION : Set.FRICTION;
+        const acceleration = Math.abs(targetSpeed) > Math.abs(player.velocity) ? Config.ACCELERATION : Config.FRICTION;
 
         player.velocity = HELPERS.moveTowards(player.velocity, targetSpeed, acceleration*dt);
 
-        const speedFactor = Math.min(Math.abs(player.velocity) / Set.MAX_SPEED, 1);
+        const speedFactor = Math.min(Math.abs(player.velocity) / Config.MAX_SPEED, 1);
         const direction = Math.sign(player.velocity) || 1;
-        player.rotation += player.steer * Set.TURN_RATE * speedFactor * dt * direction;
+        player.rotation += player.steer * Config.TURN_RATE * speedFactor * dt * direction;
 
         updateRoadProgress(player, road.getLength());
     }
 
     if(player.falling){
-        if(player.position.y < Set.RESPAWN_HEIGHT){
+        if(player.position.y < Config.RESPAWN_HEIGHT){
             respawn(player)
         }else{
-            player.velocityY -= Set.GRAVITY * dt;
+            player.velocityY -= Config.GRAVITY * dt;
             player.position.y += player.velocityY * dt;
         }
     }
@@ -98,20 +98,20 @@ function respawn(player){
     const segPos = road.getSegmentCenterPos(player.actualSegment);
     player.position.x = segPos.x;
     player.position.z = segPos.z;
-    player.position.y = Set.ROAD_Y;
+    player.position.y = Config.ROAD_Y;
     player.rotation = road.getSegmentRotation(player.actualSegment);
 }
 
 function updateRoadProgress(player, roadLength){
     if(!player.finish){
         if (player.lastSegment > roadLength - 10 &&
-        player.actualSegment < 10 && player.lap < Set.TOTAL_LAPS){
+        player.actualSegment < 10 && player.lap < Config.TOTAL_LAPS){
             player.lap++;
         }
 
         player.lastSegment = player.actualSegment;
 
-        const totalSegments = Set.TOTAL_LAPS * roadLength;
+        const totalSegments = Config.TOTAL_LAPS * roadLength;
         player.progress = (player.lap * roadLength + player.actualSegment) / totalSegments;
 
         if(player.progress > 1){
@@ -137,7 +137,7 @@ function resolveAllCollisions(){
 function carsCollide(a, b){
     const dx = a.position.x - b.position.x;
     const dz = a.position.z - b.position.z;
-    const res = dx*dx + dz*dz < Set.CAR_DIAMETER;
+    const res = dx*dx + dz*dz < Config.CAR_DIAMETER;
     return res;
 }
 
@@ -151,10 +151,10 @@ function resolveCollision(a, b){
     const nx = dx / length;
     const nz = dz / length;
 
-    a.position.x += nx * Set.COLLISION_PUSH;
-    a.position.z += nz * Set.COLLISION_PUSH;
-    b.position.x -= nx * Set.COLLISION_PUSH;
-    b.position.z -= nz * Set.COLLISION_PUSH;
+    a.position.x += nx * Config.COLLISION_PUSH;
+    a.position.z += nz * Config.COLLISION_PUSH;
+    b.position.x -= nx * Config.COLLISION_PUSH;
+    b.position.z -= nz * Config.COLLISION_PUSH;
 
     a.velocity *= 0.8;
     b.velocity *= 0.8;
@@ -168,7 +168,7 @@ setInterval(() => {
         const inputPacks = inputQueue.get(playerId);
         while (inputPacks.length > 0) {
             const inputPack = inputPacks.shift();
-            simulatePlayer(player, inputPack, 1 / Set.TICK_RATE);
+            simulatePlayer(player, inputPack, 1 / Config.TICK_RATE);
             player.lastProcessedInput = inputPack.seq;
         }
     }
@@ -178,4 +178,4 @@ setInterval(() => {
     const snapshot = { tick, serverTime: Date.now(), players: Array.from(players.values()) };
     io.sockets.emit('snapshot', snapshot);
     tick++;
-}, 1000 / Set.TICK_RATE);
+}, 1000 / Config.TICK_RATE);

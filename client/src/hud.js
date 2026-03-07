@@ -1,4 +1,4 @@
-import { Set } from '../../shared/settings.js';
+import { Config } from '../../shared/configuration.js';
 
 export class HUD {
     constructor(){
@@ -24,14 +24,14 @@ export class HUD {
     }
 
     updateRoadProgress(player){
-        const actualLap = Math.min(player.lap+1, Set.TOTAL_LAPS);
+        const actualLap = Math.min(player.lap+1, Config.TOTAL_LAPS);
         this.roadProgressFill.style.width = `${(player.progress * 100)}%`;
         this.roadProgressFill.style.background = this.colorLerp(this.blue, this.green, player.progress)
-        this.lapTxt.textContent = `LAP: ${actualLap} / ${Set.TOTAL_LAPS}`;
+        this.lapTxt.textContent = `LAP: ${actualLap} / ${Config.TOTAL_LAPS}`;
     }
 
     updateSpeedBar(player){
-        const speedRatio = (Math.abs(player.velocity) / Set.MAX_SPEED).toFixed(3);
+        const speedRatio = (Math.abs(player.velocity) / Config.MAX_SPEED).toFixed(3);
         this.speedBar.style.opacity = `${Math.max(speedRatio, 0.4)}`;
         
         this.speedFill.style.height = `${speedRatio * 100}%`;

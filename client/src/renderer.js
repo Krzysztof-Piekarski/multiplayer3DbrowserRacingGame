@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Set } from '../../shared/settings.js';
+import { Config } from '../../shared/configuration.js';
 
 export function createRenderer() {
     const renderer = new THREE.WebGLRenderer({alpha: true, antialias: true});
@@ -7,7 +7,7 @@ export function createRenderer() {
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.physicallyCorrectLights = false;
-    renderer.setPixelRatio(window.devicePixelRatio/Set.RESOLUTION_DOWNGRADE);
+    renderer.setPixelRatio(window.devicePixelRatio/Config.RESOLUTION_DOWNGRADE);
     renderer.setSize(window.innerWidth, window.innerHeight);
     container.appendChild(renderer.domElement);
 

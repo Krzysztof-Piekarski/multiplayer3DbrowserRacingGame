@@ -1,4 +1,4 @@
-export class Set{
+export class Config{
     static TICK_RATE = 20;
     static RESOLUTION_DOWNGRADE = 2;
 
