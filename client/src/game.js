@@ -57,12 +57,14 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
     });
 
     let tick = 0;
+    let serverTimeOffset = 0;
     let snapshotsBuffer = new SnapshotsBuffer();
     const pendingInputs = [];
     let inputSequence = 0;
 
     socket.on('snapshot', (snapshot) => {
         tick = snapshot.tick;
+        serverTimeOffset = snapshot.serverTime - performance.now();
         snapshotsBuffer.add(snapshot);
         snapshot.players.forEach(playerData => {
             let p = players.get(playerData.id);
@@ -180,8 +182,10 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
         player.position.z += Math.sin(player.rotation) * player.velocity * dt;
     }
 
+    const tempOlder = new THREE.Vector3();
+    const tempNewer = new THREE.Vector3();
     function interpolate() {
-        const renderTime = snapshotsBuffer.getLatestServerTime() - INTERPOLATION_DELAY;
+        const renderTime = performance.now() + serverTimeOffset - INTERPOLATION_DELAY;
         const snapshots = snapshotsBuffer.getSnapshots(renderTime);
         if (!snapshots) return;
 
@@ -191,18 +195,21 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
 
         let t = (renderTime - older.serverTime) / span;
         t = Math.min(Math.max(t, 0), 1);
+
+        const newerMap = new Map(newer.players.map(p => [p.id, p]));
+
         older.players.forEach(p => {
             if (p.id === player.getPlayerId()) return;
             if (!players.has(p.id)) return;
 
-            const newState = newer.players.find(op => op.id === p.id);
+            const newState = newerMap.get(p.id);
             if (!newState) return;
-            players.get(p.id).mesh.position.lerpVectors(p.position, newState.position, t);
-            players.get(p.id).mesh.quaternion.slerpQuaternions(
-                new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0), -p.rotation),
-                new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0), -newState.rotation),
-                t
-            );
+
+            const car = players.get(p.id).mesh;
+            tempOlder.set(p.position.x, p.position.y, p.position.z);
+            tempNewer.set(newState.position.x, newState.position.y, newState.position.z);
+            car.position.lerpVectors(tempOlder, tempNewer, t);
+            car.rotation.y = -THREE.MathUtils.lerp(p.rotation, newState.rotation, t);
         });
     }
 
