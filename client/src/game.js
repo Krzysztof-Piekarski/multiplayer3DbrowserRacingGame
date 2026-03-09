@@ -4,6 +4,7 @@ import { createLights } from './lights.js';
 import { Input } from './input.js';
 import { setupTouchControls } from './touchControls.js';
 import { Player } from './player.js';
+import { LocalPlayer } from './localPlayer.js'
 import { HUD } from './hud.js';
 import { RoadClient } from './roadClient.js';
 import * as HELPERS from '../../shared/helpers.js';
@@ -22,16 +23,16 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
         console.log(data.message);
     });
 
-    let player = null;
+    let localPlayer = null;
     let hud = null;
     const players = new Map();
 
     socket.on('initPlayer', (data) => {
-        player = new Player(data.id);
+        localPlayer = new LocalPlayer(data.id);
         hud = new HUD();
-        console.log(`Initialized player with id: ${player.getPlayerId()}`);
-        players.set(data.id, player);
-        scene.add(player.mesh);
+        console.log(`Initialized player with id: ${localPlayer.getPlayerId()}`);
+        players.set(data.id, localPlayer);
+        scene.add(localPlayer.mesh);
     });
 
     const lights = createLights();
@@ -69,27 +70,27 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
         snapshot.players.forEach(playerData => {
             let p = players.get(playerData.id);
             if (p) {
-                if (p.id === player.id) {
-                    player.isGrounded = playerData.isGrounded;
-                    player.falling = playerData.falling;
+                if (p.id === localPlayer.id) {
+                    localPlayer.isGrounded = playerData.isGrounded;
+                    localPlayer.falling = playerData.falling;
 
-                    if(player.falling && !player.startFalling){
-                        player.startFalling = true;
-                        road.computeFallingRollAndPitch(player);
+                    if(localPlayer.falling && !localPlayer.startFalling){
+                        localPlayer.startFalling = true;
+                        road.computeFallingRollAndPitch(localPlayer);
                     }
 
-                    if(!player.falling){
-                        player.updatePosition(playerData.position);
-                        player.velocity = playerData.velocity;
-                        player.velocityY = playerData.velocityY;
-                        player.rotation = playerData.rotation;
-                        player.lap = playerData.lap;
-                        player.progress = playerData.progress;
-                        player.finish = playerData.finish;
+                    if(!localPlayer.falling){
+                        localPlayer.updatePosition(playerData.position);
+                        localPlayer.velocity = playerData.velocity;
+                        localPlayer.velocityY = playerData.velocityY;
+                        localPlayer.rotation = playerData.rotation;
+                        localPlayer.lap = playerData.lap;
+                        localPlayer.progress = playerData.progress;
+                        localPlayer.finish = playerData.finish;
 
-                        player.fallPitch = 0;
-                        player.fallRoll = 0;
-                        player.startFalling = false;
+                        localPlayer.fallPitch = 0;
+                        localPlayer.fallRoll = 0;
+                        localPlayer.startFalling = false;
                     }
 
                     while (pendingInputs.length && pendingInputs[0].seq <= playerData.lastProcessedInput) {
@@ -110,7 +111,7 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
         });
 
         if(tick % 20 === 0){
-            hud.updateRanking(snapshot.players, player.id);
+            hud.updateRanking(snapshot.players, localPlayer.id);
         }
     });
 
@@ -128,7 +129,7 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
     //road.drawDebugLine(scene);
 
     function playerPrediction(dt){
-        if (!player) return;
+        if (!localPlayer) return;
 
         while (pendingInputs.length > MAX_LOCAL_PREDICTION) {
             return;
@@ -146,40 +147,40 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
     }
 
     function simulatePlayer(input, dt) {
-        if(player.isGrounded){
-            player.isGrounded = road.isGrounded(player);
+        if(localPlayer.isGrounded){
+            localPlayer.isGrounded = road.isGrounded(localPlayer);
 
-            player.throttle += (input.throttle - player.throttle) * Config.RESPONSE * dt;
-            player.steer += (input.steer - player.steer) * Config.RESPONSE * dt;
+            localPlayer.throttle += (input.throttle - localPlayer.throttle) * Config.RESPONSE * dt;
+            localPlayer.steer += (input.steer - localPlayer.steer) * Config.RESPONSE * dt;
 
             let targetSpeed = 0;
 
-            if (player.throttle > 0) {
-                targetSpeed = Config.MAX_SPEED * player.throttle;
-            } else if (player.throttle < 0) {
-                targetSpeed = -Config.MAX_SPEED * -player.throttle;
+            if (localPlayer.throttle > 0) {
+                targetSpeed = Config.MAX_SPEED * localPlayer.throttle;
+            } else if (localPlayer.throttle < 0) {
+                targetSpeed = -Config.MAX_SPEED * -localPlayer.throttle;
             }
 
-            const acceleration = Math.abs(targetSpeed) > Math.abs(player.velocity) ? Config.ACCELERATION : Config.FRICTION;
+            const acceleration = Math.abs(targetSpeed) > Math.abs(localPlayer.velocity) ? Config.ACCELERATION : Config.FRICTION;
 
-            player.velocity = HELPERS.moveTowards(player.velocity, targetSpeed, acceleration*dt);
+            localPlayer.velocity = HELPERS.moveTowards(localPlayer.velocity, targetSpeed, acceleration*dt);
 
-            const speedFactor = Math.min(Math.abs(player.velocity) / Config.MAX_SPEED, 1);
-            const direction = Math.sign(player.velocity) || 1;
-            player.rotation += player.steer * Config.TURN_RATE * speedFactor * dt * direction;
+            const speedFactor = Math.min(Math.abs(localPlayer.velocity) / Config.MAX_SPEED, 1);
+            const direction = Math.sign(localPlayer.velocity) || 1;
+            localPlayer.rotation += localPlayer.steer * Config.TURN_RATE * speedFactor * dt * direction;
         }
 
 
-        if(player.falling){
-            player.velocityY -= Config.GRAVITY * dt;
-            player.position.y += player.velocityY * dt;
+        if(localPlayer.falling){
+            localPlayer.velocityY -= Config.GRAVITY * dt;
+            localPlayer.position.y += localPlayer.velocityY * dt;
 
-            player.fallPitch += player.fallPitchVelocity * dt;
-            player.fallRoll += player.fallRollVelocity * dt;
+            localPlayer.fallPitch += localPlayer.fallPitchVelocity * dt;
+            localPlayer.fallRoll += localPlayer.fallRollVelocity * dt;
         }
 
-        player.position.x += Math.cos(player.rotation) * player.velocity * dt;
-        player.position.z += Math.sin(player.rotation) * player.velocity * dt;
+        localPlayer.position.x += Math.cos(localPlayer.rotation) * localPlayer.velocity * dt;
+        localPlayer.position.z += Math.sin(localPlayer.rotation) * localPlayer.velocity * dt;
     }
 
     const tempOlder = new THREE.Vector3();
@@ -199,7 +200,7 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
         const newerMap = new Map(newer.players.map(p => [p.id, p]));
 
         older.players.forEach(p => {
-            if (p.id === player.getPlayerId()) return;
+            if (p.id === localPlayer.getPlayerId()) return;
             if (!players.has(p.id)) return;
 
             const newState = newerMap.get(p.id);
@@ -221,17 +222,17 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
     const TICK_MS = 1000 / Config.TICK_RATE;
 
     function animate(time) {
-        if(player && tick !== 0 && time - lastPredictionTime >= TICK_MS){
+        if(localPlayer && tick !== 0 && time - lastPredictionTime >= TICK_MS){
             playerPrediction(1 / Config.TICK_RATE);
             lastPredictionTime += TICK_MS;
         }
 
         interpolate();
-        if(player) {
-            player.render();
-            fx.updateFromSpeed(player.velocity, Config.MAX_SPEED);
-            camera.update(1/60, player, player.isGrounded);
-            hud.update(player);
+        if(localPlayer) {
+            localPlayer.render();
+            fx.updateFromSpeed(localPlayer.velocity, Config.MAX_SPEED);
+            camera.update(1/60, localPlayer, localPlayer.isGrounded);
+            hud.update(localPlayer);
         }
 
         if(statsVisible) {

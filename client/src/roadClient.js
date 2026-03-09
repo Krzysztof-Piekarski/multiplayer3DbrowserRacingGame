@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Road } from '../../shared/road.js'
+import { Road } from '../../shared/road.js';
 
 export class RoadClient extends Road{
     computeFallingRollAndPitch(player){
