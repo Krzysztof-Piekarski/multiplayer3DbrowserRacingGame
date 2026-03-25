@@ -42,6 +42,21 @@ export class Camera {
         this.main.rotateZ(this.cameraRoll);
     }
 
+    updateObserver(player){
+        const car = player.mesh;
+        const forward = new THREE.Vector3(
+            Math.cos(car.rotation.y), 0, Math.sin(car.rotation.y)
+        );
+
+        const observerCameraPos = car.position.clone()
+        .addScaledVector(forward, (-Camera.DISTANCE * 4));
+        observerCameraPos.y += (Camera.HEIGHT * 7);
+
+        this.main.position.copy(observerCameraPos);
+        this.main.lookAt(car.position);
+        this.main.up.set(0, 1, 0);
+    }
+
     static DISTANCE = 6;
     static HEIGHT = 2;
     static LAG_BASE = 20;

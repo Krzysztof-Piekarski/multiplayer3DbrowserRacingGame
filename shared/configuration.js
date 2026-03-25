@@ -20,4 +20,10 @@ export class Config{
 
     static GRAVITY = 36;
     static RESPAWN_HEIGHT = -40;
+
+    static GAME_STATE = {
+        LOBBY: 'lobby',
+        RACE: 'race',
+        FINISHED: 'finished'
+    };
 }

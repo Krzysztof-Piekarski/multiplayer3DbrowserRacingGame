@@ -15,6 +15,7 @@ const io = new Server(server, {
     }
 });
 
+let gameState = Config.GAME_STATE.LOBBY;
 const players = new Map();
 const inputQueue = new Map();
 let tick = 0;
@@ -23,13 +24,25 @@ io.on('connection', (socket) => {
     console.log(`New player connected: ${socket.id}`);
     socket.emit('welcome', { message: `Connected to 3D multiplayer browser racing game! Your id: ${socket.id}`});
     console.log(`Number of active players: ${io.engine.clientsCount}`);
-    players.set(socket.id, { id: socket.id,
-                position: { x: Config.INIT_X_POS, y: Config.ROAD_Y, z: Config.INIT_Z_POS }, 
-                velocity: 0, velocityY: 0, rotation: -1.25, throttle: 0, steer: 0,
-                actualSegment: 0, lastSegment: 0, lap: 0, progress: 0, finish: false,
-                isGrounded: true, falling: false, lastProcessedInput: 0, });
-    inputQueue.set(socket.id, []);
-    socket.emit('initPlayer', { id: socket.id });
+    
+    if(gameState === Config.GAME_STATE.LOBBY){
+        players.set(socket.id, { id: socket.id,
+                    position: { x: Config.INIT_X_POS, y: Config.ROAD_Y, z: Config.INIT_Z_POS }, 
+                    velocity: 0, velocityY: 0, rotation: -1.25, throttle: 0, steer: 0,
+                    actualSegment: 0, lastSegment: 0, lap: 0, progress: 0, finish: false,
+                    isGrounded: true, falling: false, lastProcessedInput: 0, });
+        inputQueue.set(socket.id, []);
+        socket.emit('initPlayer', { id: socket.id });
+    }else{
+        socket.emit('initObserver');
+    }
+
+    emitLobbtyUpdate();
+
+    socket.on('clientStartRace', () => {
+        if(gameState !== Config.GAME_STATE.LOBBY || players.size < 2) return;
+        startRace();
+    });
 
     socket.on('playerInput', (inputPack) => {
         inputQueue.get(socket.id).push(inputPack);
@@ -40,8 +53,14 @@ io.on('connection', (socket) => {
         players.delete(socket.id);
         console.log(`Number of active players: ${io.engine.clientsCount}`);
         socket.broadcast.emit('playerDisconnected', socket.id );
+        emitLobbtyUpdate();
     });
 });
+
+function emitLobbtyUpdate(){
+    const playersCount = players.size;
+    io.emit('lobbyUpdate', {playersCount, gameState});
+}
 
 server.listen(PORT, '0.0.0.0');
 
@@ -160,22 +179,28 @@ function resolveCollision(a, b){
     b.velocity *= 0.8;
 }
 
-setInterval(() => {
-    for (const [playerId, inputPack] of inputQueue.entries()) {
-        const player = players.get(playerId);
-        if (!player) continue;
+function startRace(){
+    if(gameState !== Config.GAME_STATE.LOBBY || players.size < 2) return;
+    gameState = Config.GAME_STATE.RACE;
+    emitLobbtyUpdate();
 
-        const inputPacks = inputQueue.get(playerId);
-        while (inputPacks.length > 0) {
-            const inputPack = inputPacks.shift();
-            simulatePlayer(player, inputPack, 1 / Config.TICK_RATE);
-            player.lastProcessedInput = inputPack.seq;
+    setInterval(() => {
+        for (const [playerId, inputPack] of inputQueue.entries()) {
+            const player = players.get(playerId);
+            if (!player) continue;
+
+            const inputPacks = inputQueue.get(playerId);
+            while (inputPacks.length > 0) {
+                const inputPack = inputPacks.shift();
+                simulatePlayer(player, inputPack, 1 / Config.TICK_RATE);
+                player.lastProcessedInput = inputPack.seq;
+            }
         }
-    }
 
-    resolveAllCollisions();
+        resolveAllCollisions();
 
-    const snapshot = { tick, serverTime: Date.now(), players: Array.from(players.values()) };
-    io.sockets.emit('snapshot', snapshot);
-    tick++;
-}, 1000 / Config.TICK_RATE);
+        const snapshot = { tick, serverTime: Date.now(), players: Array.from(players.values()) };
+        io.sockets.emit('snapshot', snapshot);
+        tick++;
+    }, 1000 / Config.TICK_RATE);
+}

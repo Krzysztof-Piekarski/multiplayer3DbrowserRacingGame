@@ -16,6 +16,7 @@ const INTERPOLATION_DELAY = 100;
 const MAX_LOCAL_PREDICTION = 4;
 
 let statsVisible = false;
+let gameState = Config.GAME_STATE.LOBBY;
 
 export async function startGame({ scene, renderer, camera, fx } = {}) {
     const socket = io(`${window.location.protocol}//${window.location.hostname}:3000`);
@@ -23,16 +24,50 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
         console.log(data.message);
     });
 
+    const startBtn = document.getElementById('start-button');
+    if (startBtn) {
+        startBtn.addEventListener('click', () => {
+            if (socket) socket.emit('clientStartRace');
+        });
+    }
+
     let localPlayer = null;
     let hud = null;
     const players = new Map();
 
     socket.on('initPlayer', (data) => {
         localPlayer = new LocalPlayer(data.id);
-        hud = new HUD();
         console.log(`Initialized player with id: ${localPlayer.getPlayerId()}`);
         players.set(data.id, localPlayer);
         scene.add(localPlayer.mesh);
+    });
+
+    socket.on('initObserver', () => {
+        console.log('The race has begun. You are an observer. Wait for a new game to begin.');
+    });
+
+    socket.on('lobbyUpdate', (data) => {
+        if(gameState === Config.GAME_STATE.LOBBY && data.gameState === Config.GAME_STATE.RACE){
+            startRace();
+            if(!localPlayer){
+                hud.hideForObserver();
+            }
+            gameState = data.gameState;
+            return;
+        }
+
+        const playersOnline = document.getElementById('players-count-text');
+        playersOnline.textContent = `${data.playersCount}`;
+        
+        const startButton = document.getElementById('start-button');
+        const infoText = document.getElementById('info-text');
+        if (data.playersCount > 1) {
+            startButton.disabled = false;
+            infoText.classList.add('hidden');
+        }else{
+            startButton.disabled = true;
+            infoText.classList.remove('hidden');
+        }
     });
 
     const lights = createLights();
@@ -70,7 +105,7 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
         snapshot.players.forEach(playerData => {
             let p = players.get(playerData.id);
             if (p) {
-                if (p.id === localPlayer.id) {
+                if (localPlayer && p.id === localPlayer.id) {
                     localPlayer.isGrounded = playerData.isGrounded;
                     localPlayer.falling = playerData.falling;
 
@@ -111,7 +146,11 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
         });
 
         if(tick % 20 === 0){
-            hud.updateRanking(snapshot.players, localPlayer.id);
+            if(localPlayer){
+                hud.updateRanking(snapshot.players, localPlayer.id);
+            }else{
+                hud.updateRanking(snapshot.players);
+            }
         }
     });
 
@@ -200,7 +239,7 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
         const newerMap = new Map(newer.players.map(p => [p.id, p]));
 
         older.players.forEach(p => {
-            if (p.id === localPlayer.getPlayerId()) return;
+            if (localPlayer && p.id === localPlayer.getPlayerId()) return;
             if (!players.has(p.id)) return;
 
             const newState = newerMap.get(p.id);
@@ -233,6 +272,11 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
             fx.updateFromSpeed(localPlayer.velocity, Config.MAX_SPEED);
             camera.update(1/60, localPlayer, localPlayer.isGrounded);
             hud.update(localPlayer);
+        }else{
+            const firstPlayer = players.values().next().value;
+            if(firstPlayer){
+                camera.updateObserver(firstPlayer);
+            }
         }
 
         if(statsVisible) {
@@ -254,5 +298,14 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
         fx.resize(width, height);
     });
 
-    animate();
+    function hideLobby() {
+        const lobby = document.getElementById('lobby');
+        if(lobby) lobby.style.display = 'none';
+    }
+
+    function startRace(){
+        hideLobby();
+        hud = new HUD();
+        animate();
+    }
 }

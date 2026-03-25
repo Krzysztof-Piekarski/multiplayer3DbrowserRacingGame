@@ -8,6 +8,17 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <div id="lobby" class="lobby-state">
+        <div class="lobby-content">
+            <h1>CyberRace</h1>
+            <div class="players-count">
+                <p>Players online: <span id="players-count-text"><strong>0</strong></span></p>
+            </div>
+            <button id="start-button" class="btn-start" disabled>Start race</button>
+            <p id="info-text">You need 2 players to start</p>
+        </div>
+    </div>
+
     <div id="touch-controls">
         <div class="throttle-controls">
             <button id="forward-btn">▲</button>
@@ -24,7 +35,7 @@
 
     <div id="hud">
         <div class="lap-statistics">
-            <div class="road-progress-bar">
+            <div id="road-progress-bar">
                 <div id="road-progress-fill"></div>
             </div>
 

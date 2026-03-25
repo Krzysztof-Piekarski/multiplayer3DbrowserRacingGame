@@ -64,7 +64,7 @@ export class HUD {
             }
 
             el.textContent = `${index + 1}. ${player.id} ${(player.progress*100).toFixed(2)}%`;
-            if(player.id === localPlayerId){
+            if(localPlayerId && player.id === localPlayerId){
                 el.style.fontWeight = 'bold';
             }
         });
@@ -119,5 +119,13 @@ export class HUD {
 
     lerp(first, second, t){
         return first + (second - first) * t;
+    }
+
+    hideForObserver(){
+        document.getElementById('road-progress-bar').style.visibility = 'hidden';
+        this.roadProgressFill.style.visibility = 'hidden';
+        this.lapTxt.style.visibility = 'hidden';
+        this.speedBar.style.visibility = 'hidden';
+        this.speedFill.style.visibility = 'hidden';
     }
 }
