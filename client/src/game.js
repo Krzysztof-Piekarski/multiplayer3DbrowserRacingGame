@@ -70,6 +70,11 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
         }
     });
 
+    socket.on('finishUpdate', () => {
+        gameState = Config.GAME_STATE.FINISHED;
+        hud.hideForObserver();
+    });
+
     const lights = createLights();
     const light = lights.light;
     const dirLight = lights.dirLight;
@@ -105,7 +110,7 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
         snapshot.players.forEach(playerData => {
             let p = players.get(playerData.id);
             if (p) {
-                if (localPlayer && p.id === localPlayer.id) {
+                if (localPlayer && p.id === localPlayer.id && !localPlayer.finish) {
                     localPlayer.isGrounded = playerData.isGrounded;
                     localPlayer.falling = playerData.falling;
 
@@ -267,14 +272,19 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
         }
 
         interpolate();
-        if(localPlayer) {
+        if(localPlayer && !localPlayer.finish) {
             localPlayer.render();
             fx.updateFromSpeed(localPlayer.velocity, Config.MAX_SPEED);
             camera.update(1/60, localPlayer, localPlayer.isGrounded);
             hud.update(localPlayer);
         }else{
-            const firstPlayer = players.values().next().value;
-            if(firstPlayer){
+            let firstPlayer = null;
+            players.forEach(player => {
+                if (!firstPlayer && !player.finish) {
+                    firstPlayer = player;
+                }
+            });
+            if (firstPlayer) {
                 camera.updateObserver(firstPlayer);
             }
         }

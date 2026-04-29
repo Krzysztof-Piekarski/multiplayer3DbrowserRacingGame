@@ -69,6 +69,10 @@ const points = await HELPERS.loadSampledPointsFromRoadCurveServer();
 road.initFromSampledPoints(points);
 
 function simulatePlayer(player, inputPack, dt) {
+    if(player.finish){
+        return;
+    }
+
     if(player.isGrounded){
         player.isGrounded = road.isGrounded(player);
         const input = inputPack.input;
@@ -136,6 +140,7 @@ function updateRoadProgress(player, roadLength){
         if(player.progress > 1){
             player.finish = true;
             player.progress = 1;
+            io.to(player.id).emit('finishUpdate');
         }
     }
 }

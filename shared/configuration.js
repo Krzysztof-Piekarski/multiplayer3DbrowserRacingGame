@@ -7,9 +7,9 @@ export class Config{
 
     static ROAD_WIDTH = 20;
     static ROAD_Y = 0.2;
-    static TOTAL_LAPS = 2;
+    static TOTAL_LAPS = 1;
 
-    static MAX_SPEED = 30;
+    static MAX_SPEED = 44;
     static ACCELERATION = 20;
     static FRICTION = 6;
     static TURN_RATE = 2;
