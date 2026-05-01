@@ -39,7 +39,26 @@ export class HUD {
     }
 
     updateRanking(players, localPlayerId){
-        const sorted = [...players].sort((a, b) => b.progress - a.progress);
+        this.bestRacePlayer = null;
+
+        const sorted = [...players].sort((a, b) => {
+            if (a.finishTime > 0 && b.finishTime > 0) {
+                return a.finishTime - b.finishTime;
+            } else if (a.finishTime > 0) {
+                return -1; 
+            } else if (b.finishTime > 0) {
+                return 1; 
+            } else {
+                return b.progress - a.progress;
+            }
+        });
+        for (const player of sorted) {
+            if (!player.finish) {
+                this.bestRacePlayer = player.id;
+                break;
+            }
+        }
+
         const newOrder = sorted.map(p => p.id);
 
         this.ranking.querySelectorAll('.rank-item').forEach(el => {
@@ -64,6 +83,9 @@ export class HUD {
             }
 
             el.textContent = `${index + 1}. ${player.id} ${(player.progress*100).toFixed(2)}%`;
+            if (player.finishTime > 0){
+                el.textContent += ` ${this.formatTime(player.finishTime)}`;
+            }
             if(localPlayerId && player.id === localPlayerId){
                 el.style.fontWeight = 'bold';
             }
@@ -72,7 +94,7 @@ export class HUD {
         newOrder.forEach(id => {
             const el = this.ranking.querySelector(`[data-id="${id}"]`);
             this.ranking.appendChild(el);
-        })
+        });
 
         const newPositions = new Map();
         this.ranking.querySelectorAll('.rank-item').forEach(el => {
@@ -127,5 +149,28 @@ export class HUD {
         this.lapTxt.style.visibility = 'hidden';
         this.speedBar.style.visibility = 'hidden';
         this.speedFill.style.visibility = 'hidden';
+        document.getElementById('touch-controls').style.display = 'none';
+    }
+
+    formatTime(milliseconds){
+        const minutes = Math.floor(milliseconds / 60000);
+        const seconds = Math.floor((milliseconds % 60000) / 1000);
+        const millis = Math.floor((milliseconds % 1000) / 10);
+        return `${minutes}:${seconds.toString().padStart(2, '0')}.${millis.toString().padStart(2, '0')}`;
+    }
+
+    showFinalRanking(){
+        const lapStatistics = this.ranking.querySelector('.lap-statistics');
+        const rankItems = this.ranking.querySelectorAll('.rank-item');
+
+        if (lapStatistics) {
+            lapStatistics.style.top = '8%';
+            lapStatistics.style.left = '20%';
+        }
+
+        rankItems.forEach(item => {
+            const currentFontSize = parseFloat(window.getComputedStyle(item).fontSize);
+            item.style.fontSize = `${currentFontSize * 1.4}px`;
+        });
     }
 }

@@ -19,6 +19,7 @@ let gameState = Config.GAME_STATE.LOBBY;
 const players = new Map();
 const inputQueue = new Map();
 let tick = 0;
+let raceStartTime = null;
 
 io.on('connection', (socket) => {
     console.log(`New player connected: ${socket.id}`);
@@ -30,7 +31,7 @@ io.on('connection', (socket) => {
                     position: { x: Config.INIT_X_POS, y: Config.ROAD_Y, z: Config.INIT_Z_POS }, 
                     velocity: 0, velocityY: 0, rotation: -1.25, throttle: 0, steer: 0,
                     actualSegment: 0, lastSegment: 0, lap: 0, progress: 0, finish: false,
-                    isGrounded: true, falling: false, lastProcessedInput: 0, });
+                    finishTime: 0, isGrounded: true, falling: false, lastProcessedInput: 0, });
         inputQueue.set(socket.id, []);
         socket.emit('initPlayer', { id: socket.id });
     }else{
@@ -127,9 +128,10 @@ function respawn(player){
 
 function updateRoadProgress(player, roadLength){
     if(!player.finish){
-        if (player.lastSegment > roadLength - 10 &&
-        player.actualSegment < 10 && player.lap < Config.TOTAL_LAPS){
-            player.lap++;
+        if ((player.lastSegment > roadLength - 10) &&
+            (player.actualSegment < 10) && 
+            (player.lap < Config.TOTAL_LAPS)){
+                player.lap++;
         }
 
         player.lastSegment = player.actualSegment;
@@ -138,9 +140,12 @@ function updateRoadProgress(player, roadLength){
         player.progress = (player.lap * roadLength + player.actualSegment) / totalSegments;
 
         if(player.progress > 1){
+            if(!player.isGrounded) respawn(player);
             player.finish = true;
             player.progress = 1;
+            player.finishTime = Date.now() - raceStartTime;
             io.to(player.id).emit('finishUpdate');
+            io.emit('playerFinished', player.id);
         }
     }
 }
@@ -159,6 +164,8 @@ function resolveAllCollisions(){
 }
 
 function carsCollide(a, b){
+    if(a.finish || b.finish) return false;
+
     const dx = a.position.x - b.position.x;
     const dz = a.position.z - b.position.z;
     const res = dx*dx + dz*dz < Config.CAR_DIAMETER;
@@ -187,6 +194,7 @@ function resolveCollision(a, b){
 function startRace(){
     if(gameState !== Config.GAME_STATE.LOBBY || players.size < 2) return;
     gameState = Config.GAME_STATE.RACE;
+    raceStartTime = Date.now();
     emitLobbtyUpdate();
 
     setInterval(() => {
@@ -205,7 +213,7 @@ function startRace(){
         resolveAllCollisions();
 
         const snapshot = { tick, serverTime: Date.now(), players: Array.from(players.values()) };
-        io.sockets.emit('snapshot', snapshot);
+        io.emit('snapshot', snapshot);
         tick++;
     }, 1000 / Config.TICK_RATE);
 }

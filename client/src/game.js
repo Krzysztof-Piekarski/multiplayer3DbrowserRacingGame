@@ -71,8 +71,8 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
     });
 
     socket.on('finishUpdate', () => {
-        gameState = Config.GAME_STATE.FINISHED;
         hud.hideForObserver();
+        hud.showFinalRanking();
     });
 
     const lights = createLights();
@@ -143,10 +143,12 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
                     });
                 }
             } else {
-                const newPlayer = new Player(playerData.id);
-                newPlayer.updatePosition(playerData.position);
-                scene.add(newPlayer.mesh);
-                players.set(playerData.id, newPlayer);
+                if(!playerData.finish){
+                    const newPlayer = new Player(playerData.id);
+                    newPlayer.updatePosition(playerData.position);
+                    scene.add(newPlayer.mesh);
+                    players.set(playerData.id, newPlayer);
+                }
             }
         });
 
@@ -156,6 +158,13 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
             }else{
                 hud.updateRanking(snapshot.players);
             }
+        }
+    });
+
+    socket.on('playerFinished', (playerId) => {
+        console.log(`Player ${playerId} finished race.`);
+        if (players.has(playerId)) {
+            scene.remove(players.get(playerId).mesh);
         }
     });
 
@@ -246,6 +255,7 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
         older.players.forEach(p => {
             if (localPlayer && p.id === localPlayer.getPlayerId()) return;
             if (!players.has(p.id)) return;
+            if (p.finish) return;
 
             const newState = newerMap.get(p.id);
             if (!newState) return;
@@ -278,14 +288,10 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
             camera.update(1/60, localPlayer, localPlayer.isGrounded);
             hud.update(localPlayer);
         }else{
-            let firstPlayer = null;
-            players.forEach(player => {
-                if (!firstPlayer && !player.finish) {
-                    firstPlayer = player;
-                }
-            });
-            if (firstPlayer) {
-                camera.updateObserver(firstPlayer);
+            if(hud.bestRacePlayer){
+                camera.updateObserver(players.get(hud.bestRacePlayer));
+            }else{
+                camera.setOnEndPosition();
             }
         }
 

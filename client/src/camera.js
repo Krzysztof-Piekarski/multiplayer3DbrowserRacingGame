@@ -57,6 +57,12 @@ export class Camera {
         this.main.up.set(0, 1, 0);
     }
 
+    setOnEndPosition(){
+        this.main.position.set(180, 150, 100);
+        this.main.lookAt(-10, 0, 0);
+        this.main.up.set(0, 1, 0);
+    }
+
     static DISTANCE = 6;
     static HEIGHT = 2;
     static LAG_BASE = 20;
