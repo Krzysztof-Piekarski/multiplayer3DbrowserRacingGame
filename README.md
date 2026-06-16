@@ -5,6 +5,12 @@ Temat pracy:
 
 Temat po angielsku: **3D multiplayer browser racing game using Three.js**
 
+Aby uruchomić grę, należy w folderze projektu wykonać:
+- npm install
+- npm start
+a następnie otworzyć wyświetlony link:
+➜  Network: http://....:888
+
 ### Cel pracy:
 Celem pracy jest projekt i implementacja przeglądarkowej, trójwymiarowej gry wyścigowej multiplayer. Ze względu na brak preinstalowanych zasobów po stronie użytkownika, modele 3D, tekstury oraz logika gry zostaną zoptymalizowane pod kątem szybkiego uruchamiania aplikacji oraz płynnej rozgrywki. Gra umożliwi wielu graczom dołączenie do wspólnej sesji rozgrywki niezależnie od wykorzystywanej platformy sprzętowej (komputer stacjonarny, smartfon, tablet), bez konieczności instalacji dodatkowego oprogramowania.
 
@@ -19,4 +25,4 @@ Celem pracy jest projekt i implementacja przeglądarkowej, trójwymiarowej gry w
 2. Juriy Bura, Paul Coates, Profesjonalne tworzenie gier internetowych dla systemu Android w językach HTML5, CSS3 i JavaScript, Helion 2013
 3. Andrei Tazetdinov, 3D Web Development with Three.js and Next.js, BPB Publications 2025
 4. Rafał Nowocień, Tworzenie gier komputerowych. Kompendium producenta Rafał Nowocień, Helion 2019
-5. Dokumentacja biblioteki three.js, https://threejs.org/docs/ 
+5. Dokumentacja biblioteki three.js, https://threejs.org/docs/
