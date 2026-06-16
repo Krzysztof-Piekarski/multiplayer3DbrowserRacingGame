@@ -8,6 +8,7 @@ Temat po angielsku: **3D multiplayer browser racing game using Three.js**
 Aby uruchomić grę, należy w folderze projektu wykonać:
 - npm install
 - npm start
+
 a następnie otworzyć wyświetlony link:
 ➜  Network: http://....:888
 
