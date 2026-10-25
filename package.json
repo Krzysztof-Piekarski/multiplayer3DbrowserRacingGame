@@ -6,7 +6,9 @@
     "scripts": {
         "dev": "vite",
         "server": "node server/main.js",
-        "start": "concurrently \"npm run server\" \"npm run dev\""
+        "dev:all": "concurrently \"npm run server\" \"npm run dev\"",
+        "build": "vite build",
+        "start": "node server/main.js"
     },
     "dependencies": {
         "express": "^5.2.1",
@@ -21,8 +23,10 @@
     "author": "Krzysztof Piekarski",
     "keywords": [
         "multiplayer",
-        "3d",
-        "browser",
-        "racing"
+        "Three.js",
+        "computer games",
+        "web application",
+        "JavaScript",
+        "Socket.IO"
     ]
 }

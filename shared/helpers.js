@@ -14,7 +14,7 @@ export async function loadSampledPointsFromRoadCurveClient(){
 
 export async function loadSampledPointsFromRoadCurveServer(){
     const data = JSON.parse(
-        await fs.readFile('./client/resources/models/sampledRoadCurve.json', 'utf8')
+        await fs.readFile('./client/public/resources/models/sampledRoadCurve.json', 'utf8')
     )
 
     return setUpSampledPointsFromData(data);

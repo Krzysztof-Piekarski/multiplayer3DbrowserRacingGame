@@ -1,3 +1,5 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
@@ -5,9 +7,21 @@ import { Config } from '../shared/configuration.js';
 import { Road } from '../shared/road.js';
 import * as HELPERS from '../shared/helpers.js';
 
-const PORT = 3000;
-
+const PORT = 888;
 const app = express();
+
+const publicFilename = fileURLToPath(import.meta.url);
+const publicDirname = path.dirname(publicFilename);
+const buildPath = path.resolve(publicDirname, '..', 'build');
+
+app.use(express.static(buildPath));
+
+app.get('/{*splat}', (req, res, next) => {
+    res.sendFile(path.join(buildPath, 'index.html'), (err) => {
+        if (err) next(err);
+    })
+})
+
 const server = createServer(app);
 const io = new Server(server, {
     cors: {
@@ -63,7 +77,9 @@ function emitLobbtyUpdate(){
     io.emit('lobbyUpdate', {playersCount, gameState});
 }
 
-server.listen(PORT, '0.0.0.0');
+server.listen(PORT, '0.0.0.0', () => {
+    console.log(`Game server running on port ${PORT}`);
+});
 
 const road = new Road();
 const points = await HELPERS.loadSampledPointsFromRoadCurveServer();

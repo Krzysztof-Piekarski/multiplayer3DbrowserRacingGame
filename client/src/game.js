@@ -19,7 +19,7 @@ let statsVisible = false;
 let gameState = Config.GAME_STATE.LOBBY;
 
 export async function startGame({ scene, renderer, camera, fx } = {}) {
-    const socket = io(`${window.location.protocol}//${window.location.hostname}:3000`);
+    const socket = io(`${window.location.protocol}//${window.location.hostname}:888`);
     socket.on('welcome', (data) => {
         console.log(data.message);
     });
