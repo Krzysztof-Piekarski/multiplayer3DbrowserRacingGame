@@ -7,7 +7,6 @@ import { Config } from '../shared/configuration.js';
 import { Road } from '../shared/road.js';
 import * as HELPERS from '../shared/helpers.js';
 
-const PORT = 888;
 const app = express();
 
 const publicFilename = fileURLToPath(import.meta.url);
@@ -77,8 +76,8 @@ function emitLobbtyUpdate(){
     io.emit('lobbyUpdate', {playersCount, gameState});
 }
 
-server.listen(PORT, '0.0.0.0', () => {
-    console.log(`Game server running on port ${PORT}`);
+server.listen(Config.PORT, '0.0.0.0', () => {
+    console.log(`Game server running on port ${Config.PORT}`);
 });
 
 const road = new Road();

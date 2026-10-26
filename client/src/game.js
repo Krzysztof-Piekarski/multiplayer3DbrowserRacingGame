@@ -19,7 +19,7 @@ let statsVisible = false;
 let gameState = Config.GAME_STATE.LOBBY;
 
 export async function startGame({ scene, renderer, camera, fx } = {}) {
-    const socket = io(`${window.location.protocol}//${window.location.hostname}:888`);
+    const socket = io(`${window.location.protocol}//${window.location.hostname}:${Config.PORT}`);
     socket.on('welcome', (data) => {
         console.log(data.message);
     });
@@ -272,23 +272,27 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
     document.body.appendChild(stats.dom);
     stats.dom.style.display = 'none';
 
-    let lastPredictionTime = 0;
+    let lastPredictionTime = null;
     const TICK_MS = 1000 / Config.TICK_RATE;
 
     function animate(time) {
-        if(localPlayer && tick !== 0 && time - lastPredictionTime >= TICK_MS){
+        if (lastPredictionTime === null){
+            lastPredictionTime = time;
+        }
+
+        if (localPlayer && tick !== 0 && time - lastPredictionTime >= TICK_MS){
+            lastPredictionTime = time;
             playerPrediction(1 / Config.TICK_RATE);
-            lastPredictionTime += TICK_MS;
         }
 
         interpolate();
-        if(localPlayer && !localPlayer.finish) {
+        if (localPlayer && !localPlayer.finish) {
             localPlayer.render();
             fx.updateFromSpeed(localPlayer.velocity, Config.MAX_SPEED);
             camera.update(1/60, localPlayer, localPlayer.isGrounded);
             hud.update(localPlayer);
         }else{
-            if(hud.bestRacePlayer){
+            if (hud.bestRacePlayer){
                 camera.updateObserver(players.get(hud.bestRacePlayer));
             }else{
                 camera.setOnEndPosition();
@@ -322,6 +326,6 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
     function startRace(){
         hideLobby();
         hud = new HUD();
-        animate();
+        requestAnimationFrame(animate);
     }
 }

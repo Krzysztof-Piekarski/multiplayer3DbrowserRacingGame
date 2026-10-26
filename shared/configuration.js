@@ -1,4 +1,5 @@
 export class Config{
+    static PORT = 3000;
     static TICK_RATE = 20;
     static RESOLUTION_DOWNGRADE = 2;
 
