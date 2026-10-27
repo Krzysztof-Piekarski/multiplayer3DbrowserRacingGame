@@ -40,7 +40,7 @@ io.on('connection', (socket) => {
     console.log(`Number of active players: ${io.engine.clientsCount}`);
     
     if(gameState === Config.GAME_STATE.LOBBY){
-        players.set(socket.id, { id: socket.id,
+        players.set(socket.id, { id: socket.id, nickname: `Noname player-${socket.id.slice(0, 4)}`,
                     position: { x: Config.INIT_X_POS, y: Config.ROAD_Y, z: Config.INIT_Z_POS }, 
                     velocity: 0, velocityY: 0, rotation: -1.25, throttle: 0, steer: 0,
                     actualSegment: 0, lastSegment: 0, lap: 0, progress: 0, finish: false,
@@ -53,6 +53,30 @@ io.on('connection', (socket) => {
 
     emitLobbtyUpdate();
 
+    socket.on('setNickname', (data) => {
+        const player = players.get(socket.id);
+        if (!player){
+            return;
+        }
+        if (typeof data?.nickname !== 'string'){
+            return;
+        }
+
+        const nickname = data.nickname
+            .trim()
+            .replace(/\s+/g, '')
+            .slice(0, 21);
+        if (!nickname){
+            return;
+        }
+
+        player.nickname = nickname;
+
+        console.log(`Player: ${socket.id} changed nickname to ${nickname}`);
+
+        emitLobbtyUpdate();
+    })
+
     socket.on('clientStartRace', () => {
         if(gameState !== Config.GAME_STATE.LOBBY || players.size < 2) return;
         startRace();
@@ -63,10 +87,10 @@ io.on('connection', (socket) => {
     });
     
     socket.on('disconnect', () => {
-        console.log(`Player disconnected: ${socket.id}`);
+        console.log(`Player disconnected: ${socket.id}, nick: ${players.get(socket.id).nickname}`);
         players.delete(socket.id);
         console.log(`Number of active players: ${io.engine.clientsCount}`);
-        socket.broadcast.emit('playerDisconnected', socket.id );
+        socket.broadcast.emit('playerDisconnected', socket.id);
         emitLobbtyUpdate();
     });
 });

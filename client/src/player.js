@@ -3,8 +3,9 @@ import { loader } from './loader.js';
 import { Config } from '../../shared/configuration.js';
 
 export class Player {
-    constructor(id, color = 1) {
+    constructor(id, nickname, color = 1) {
         this.id = id;
+        this.nickname = nickname;
         this.position = new THREE.Vector3(Config.INIT_X_POS, Config.ROAD_Y, Config.INIT_X_POS);
         this.rotation = 0;
 

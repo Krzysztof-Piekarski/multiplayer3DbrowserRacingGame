@@ -24,6 +24,19 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
         console.log(data.message);
     });
 
+    const nicknameForm = document.querySelector('#nickname-form');
+    const nicknameInput = document.querySelector('#player-nick-input');
+    nicknameForm.addEventListener('submit', (event => {
+        event.preventDefault();
+
+        const nickname = nicknameInput.value.trim();
+        if (!nickname){
+            return;
+        }
+
+        socket.emit('setNickname', { nickname});
+    }));
+
     const startBtn = document.getElementById('start-button');
     if (startBtn) {
         startBtn.addEventListener('click', () => {
@@ -144,7 +157,7 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
                 }
             } else {
                 if(!playerData.finish){
-                    const newPlayer = new Player(playerData.id);
+                    const newPlayer = new Player(playerData.id, playerData.nickname);
                     newPlayer.updatePosition(playerData.position);
                     scene.add(newPlayer.mesh);
                     players.set(playerData.id, newPlayer);
@@ -169,9 +182,9 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
     });
 
     socket.on('playerDisconnected', (playerId) => {
-        console.log(`Player ${playerId} disconnected.`);
         if (players.has(playerId)) {
             scene.remove(players.get(playerId).mesh);
+            console.log(`Player ${players.get(playerId).nickname} disconnected.`);
             players.delete(playerId);
         }
     });

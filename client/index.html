@@ -14,6 +14,21 @@
             <div class="players-count">
                 <p>Players online: <span id="players-count-text"><strong>0</strong></span></p>
             </div>
+
+            <form id="nickname-form">
+                <label for="player-nick-input">Nick:</label>
+                <input
+                    type="text"
+                    id="player-nick-input" 
+                    name="player-nick" 
+                    placeholder="Enter your nickname"
+                    maxlength="21"
+                    required
+                >
+
+                <button type="submit">Set</button>
+            </form>
+
             <button id="start-button" class="btn-start" disabled>Start race</button>
             <p id="info-text">You need 2 players to start</p>
         </div>
