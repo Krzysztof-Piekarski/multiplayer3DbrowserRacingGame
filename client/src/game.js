@@ -57,6 +57,14 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
 
     socket.on('initObserver', () => {
         console.log('The race has begun. You are an observer. Wait for a new game to begin.');
+
+        if(localPlayer){
+            console.warn('Reconnected during the race.');
+            scene.remove(localPlayer.mesh);
+            players.delete(localPlayer.getPlayerId());
+            localPlayer = null;
+            hud.hideForObserver();
+        }
     });
 
     socket.on('lobbyUpdate', (data) => {
