@@ -19,7 +19,7 @@ let statsVisible = false;
 let gameState = Config.GAME_STATE.LOBBY;
 
 export async function startGame({ scene, renderer, camera, fx } = {}) {
-    const socket = io(`${window.location.protocol}//${window.location.hostname}:${Config.PORT}`);
+    const socket = io();
     socket.on('welcome', (data) => {
         console.log(data.message);
     });
@@ -79,6 +79,16 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
 
         const playersOnline = document.getElementById('players-count-text');
         playersOnline.textContent = `${data.playersCount}`;
+
+
+        if (localPlayer){
+            data.players.forEach(playerFromUpdate => {
+                if (localPlayer.getPlayerId() === playerFromUpdate.id){
+                    const nicknameText = document.getElementById('lobby-nickname');
+                    nicknameText.textContent = `${playerFromUpdate.nickname}`;
+                }
+            });
+        }
         
         const startButton = document.getElementById('start-button');
         const infoText = document.getElementById('info-text');
@@ -192,7 +202,7 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
     socket.on('playerDisconnected', (playerId) => {
         if (players.has(playerId)) {
             scene.remove(players.get(playerId).mesh);
-            console.log(`Player ${players.get(playerId).nickname} disconnected.`);
+            console.log(`Player ${players.get(playerId)} disconnected.`);
             players.delete(playerId);
         }
     });

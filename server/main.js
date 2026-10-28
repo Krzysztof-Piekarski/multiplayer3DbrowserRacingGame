@@ -40,7 +40,7 @@ io.on('connection', (socket) => {
     console.log(`Number of active players: ${io.engine.clientsCount}`);
     
     if(gameState === Config.GAME_STATE.LOBBY){
-        players.set(socket.id, { id: socket.id, nickname: `Noname_player-${socket.id.slice(0, 4)}`,
+        players.set(socket.id, { id: socket.id, nickname: `Noname-${socket.id.slice(0, 3)}`,
                     position: { x: Config.INIT_X_POS, y: Config.ROAD_Y, z: Config.INIT_Z_POS }, 
                     velocity: 0, velocityY: 0, rotation: -1.25, throttle: 0, steer: 0,
                     actualSegment: 0, lastSegment: 0, lap: 0, progress: 0, finish: false,
@@ -69,6 +69,9 @@ io.on('connection', (socket) => {
         if (!nickname){
             return;
         }
+        if (player.nickname === nickname){
+            return;
+        }
 
         player.nickname = nickname;
 
@@ -91,7 +94,7 @@ io.on('connection', (socket) => {
     });
     
     socket.on('disconnect', () => {
-        console.log(`Player disconnected: ${socket.id}, nick: ${players.get(socket.id).nickname}`);
+        console.log(`Player disconnected: ${socket.id}`);
         players.delete(socket.id);
         inputQueue.delete(socket.id);
         console.log(`Number of active players: ${io.engine.clientsCount}`);
@@ -102,7 +105,7 @@ io.on('connection', (socket) => {
 
 function emitLobbtyUpdate(){
     const playersCount = players.size;
-    io.emit('lobbyUpdate', {playersCount, gameState});
+    io.emit('lobbyUpdate', {playersCount, gameState, players: Array.from(players.values())});
 }
 
 server.listen(Config.PORT, '0.0.0.0', () => {
