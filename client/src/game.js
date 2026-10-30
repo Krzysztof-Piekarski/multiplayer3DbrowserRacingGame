@@ -49,7 +49,7 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
     const players = new Map();
 
     socket.on('initPlayer', (data) => {
-        localPlayer = new LocalPlayer(data.id);
+        localPlayer = new LocalPlayer(data.id, data.nickname);
         console.log(`Initialized player with id: ${localPlayer.getPlayerId()}`);
         players.set(data.id, localPlayer);
         scene.add(localPlayer.mesh);
@@ -83,9 +83,12 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
 
         if (localPlayer){
             data.players.forEach(playerFromUpdate => {
-                if (localPlayer.getPlayerId() === playerFromUpdate.id){
-                    const nicknameText = document.getElementById('lobby-nickname');
-                    nicknameText.textContent = `${playerFromUpdate.nickname}`;
+                if (localPlayer.getPlayerId() === playerFromUpdate.id &&
+                    localPlayer.nickname !== playerFromUpdate.nickname){
+                        localPlayer.nickname = playerFromUpdate.nickname;
+                        const nicknameText = document.getElementById('lobby-nickname');
+                        nicknameText.textContent = `${playerFromUpdate.nickname}`;
+                        console.log(`Nickname changed to: ${playerFromUpdate.nickname}`);
                 }
             });
         }
@@ -202,7 +205,7 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
     socket.on('playerDisconnected', (playerId) => {
         if (players.has(playerId)) {
             scene.remove(players.get(playerId).mesh);
-            console.log(`Player ${players.get(playerId)} disconnected.`);
+            console.log(`Player ${playerId} disconnected.`);
             players.delete(playerId);
         }
     });
@@ -323,7 +326,7 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
             camera.update(1/60, localPlayer, localPlayer.isGrounded);
             hud.update(localPlayer);
         }else{
-            if (hud.bestRacePlayer){
+            if (hud.bestRacePlayer && players.has(hud.bestRacePlayer)){
                 camera.updateObserver(players.get(hud.bestRacePlayer));
             }else{
                 camera.setOnEndPosition();

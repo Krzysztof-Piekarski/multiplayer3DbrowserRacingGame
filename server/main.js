@@ -40,13 +40,14 @@ io.on('connection', (socket) => {
     console.log(`Number of active players: ${io.engine.clientsCount}`);
     
     if(gameState === Config.GAME_STATE.LOBBY){
-        players.set(socket.id, { id: socket.id, nickname: `Noname-${socket.id.slice(0, 3)}`,
+        const nick = `Noname-${socket.id.slice(0, 3)}`
+        players.set(socket.id, { id: socket.id, nickname: nick,
                     position: { x: Config.INIT_X_POS, y: Config.ROAD_Y, z: Config.INIT_Z_POS }, 
-                    velocity: 0, velocityY: 0, rotation: -1.25, throttle: 0, steer: 0,
-                    actualSegment: 0, lastSegment: 0, lap: 0, progress: 0, finish: false,
-                    finishTime: 0, isGrounded: true, falling: false, lastProcessedInput: 0, });
+                    velocity: 0, velocityY: 0, rotation: Config.INIT_ROTATION, throttle: 0, steer: 0,
+                    actualSegment: Config.INIT_SEGMENT, lastSegment: Config.INIT_SEGMENT, lap: 0, progress: 0,
+                    finish: false, finishTime: 0, isGrounded: true, falling: false, lastProcessedInput: 0});
         inputQueue.set(socket.id, []);
-        socket.emit('initPlayer', { id: socket.id });
+        socket.emit('initPlayer', { id: socket.id, nickname: nick});
     }else{
         socket.emit('initObserver');
     }
@@ -82,6 +83,8 @@ io.on('connection', (socket) => {
 
     socket.on('clientStartRace', () => {
         if(gameState !== Config.GAME_STATE.LOBBY || players.size < 2) return;
+        const player = players.get(socket.id);
+        console.log(`Player: ${player.nickname} started the race`);
         startRace();
     });
 
@@ -184,7 +187,7 @@ function updateRoadProgress(player, roadLength){
         player.lastSegment = player.actualSegment;
 
         const totalSegments = Config.TOTAL_LAPS * roadLength;
-        player.progress = (player.lap * roadLength + player.actualSegment) / totalSegments;
+        player.progress = ((player.lap * roadLength + player.actualSegment) / totalSegments) -0.02;
 
         if(player.progress > 1){
             if(!player.isGrounded) respawn(player);

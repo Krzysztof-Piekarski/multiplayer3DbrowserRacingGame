@@ -3,8 +3,10 @@ export class Config{
     static TICK_RATE = 20;
     static RESOLUTION_DOWNGRADE = 2;
 
-    static INIT_X_POS = -259;
-    static INIT_Z_POS = 280;
+    static INIT_X_POS = -60.33;
+    static INIT_Z_POS = 255.05;
+    static INIT_ROTATION = 0.01;
+    static INIT_SEGMENT = 15;
 
     static ROAD_WIDTH = 20;
     static ROAD_Y = 0.2;

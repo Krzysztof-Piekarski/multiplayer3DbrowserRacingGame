@@ -7,7 +7,7 @@ export class Player {
         this.id = id;
         this.nickname = nickname;
         this.position = new THREE.Vector3(Config.INIT_X_POS, Config.ROAD_Y, Config.INIT_X_POS);
-        this.rotation = 0;
+        this.rotation = Config.INIT_ROTATION;
 
         this.progress = 0;
         this.lap = 0;

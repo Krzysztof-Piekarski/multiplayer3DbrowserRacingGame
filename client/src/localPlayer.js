@@ -1,16 +1,17 @@
 import { Player } from './player.js';
+import { Config } from '../../shared/configuration.js';
 import * as THREE from 'three';
 
 export class LocalPlayer extends Player {
-    constructor(id, color = 1) {
-        super(id, color);
+    constructor(id, nickname) {
+        super(id, nickname);
 
         this.velocity = 0;
         this.velocityY = 0;
         this.throttle = 0;
         this.steer = 0;
 
-        this.actualSegment = 0;
+        this.actualSegment = Config.INIT_SEGMENT;
 
         this.renderPosition = new THREE.Vector3(0, 0, 0);
         this.renderRotation = 0;

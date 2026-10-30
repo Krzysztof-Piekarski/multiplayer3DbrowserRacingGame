@@ -82,7 +82,7 @@ export class HUD {
                 this.ranking.appendChild(el);
             }
 
-            el.textContent = `${index + 1}. ${player.nickname} ${(player.progress*100).toFixed(2)}%`;
+            el.textContent = `${index + 1}. ${player.nickname} ${(player.progress*100).toFixed(1)}%`;
             if (player.finishTime > 0){
                 el.textContent += ` ${this.formatTime(player.finishTime)}`;
             }
