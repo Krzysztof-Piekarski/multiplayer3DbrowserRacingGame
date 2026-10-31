@@ -74,7 +74,6 @@ export class HUD {
 
         sorted.forEach((player, index) => {
             let el = this.ranking.querySelector(`[data-id="${player.id}"]`);
-
             if (!el) {
                 el = document.createElement('div');
                 el.className = 'rank-item';
@@ -87,6 +86,8 @@ export class HUD {
                 el.textContent += ` ${this.formatTime(player.finishTime)}`;
             }
             if(localPlayerId && player.id === localPlayerId){
+                el.style.color = '#d25e07';
+                el.style.textShadow = "0 0 10px #ffffff77";
                 el.style.fontWeight = 'bold';
             }
         });

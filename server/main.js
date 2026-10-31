@@ -17,7 +17,7 @@ app.use(express.static(buildPath));
 
 app.get('/{*splat}', (req, res, next) => {
     res.sendFile(path.join(buildPath, 'index.html'), (err) => {
-        if (err) next(err);
+        if(err) next(err);
     })
 })
 
@@ -56,22 +56,22 @@ io.on('connection', (socket) => {
 
     socket.on('setNickname', (data) => {
         const player = players.get(socket.id);
-        if (!player){
-            return;
+        if(!player){
+           return;
         }
-        if (typeof data?.nickname !== 'string'){
-            return;
+        if(typeof data?.nickname !== 'string'){
+           return;
         }
 
         const nickname = data.nickname
             .trim()
             .replace(/\s+/g, '')
             .slice(0, 21);
-        if (!nickname){
-            return;
+        if(!nickname){
+           return;
         }
-        if (player.nickname === nickname){
-            return;
+        if(player.nickname === nickname){
+           return;
         }
 
         player.nickname = nickname;
@@ -118,6 +118,8 @@ server.listen(Config.PORT, '0.0.0.0', () => {
 const road = new Road();
 const points = await HELPERS.loadSampledPointsFromRoadCurveServer();
 road.initFromSampledPoints(points);
+const roadSegmentsAmount = road.getLength();
+const totalSegments = Config.TOTAL_LAPS * roadSegmentsAmount;
 
 function simulatePlayer(player, inputPack, dt) {
     if(player.finish){
@@ -147,7 +149,7 @@ function simulatePlayer(player, inputPack, dt) {
         const direction = Math.sign(player.velocity) || 1;
         player.rotation += player.steer * Config.TURN_RATE * speedFactor * dt * direction;
 
-        updateRoadProgress(player, road.getLength());
+        updateRoadProgress(player);
     }
 
     if(player.falling){
@@ -176,18 +178,16 @@ function respawn(player){
     player.rotation = road.getSegmentRotation(player.actualSegment);
 }
 
-function updateRoadProgress(player, roadLength){
+function updateRoadProgress(player){
     if(!player.finish){
-        if ((player.lastSegment > roadLength - 10) &&
-            (player.actualSegment < 10) && 
-            (player.lap < Config.TOTAL_LAPS)){
+        if((player.lastSegment > roadSegmentsAmount - 10) &&
+           (player.actualSegment < 10) && 
+           (player.lap < Config.TOTAL_LAPS)){
                 player.lap++;
         }
 
         player.lastSegment = player.actualSegment;
-
-        const totalSegments = Config.TOTAL_LAPS * roadLength;
-        player.progress = ((player.lap * roadLength + player.actualSegment) / totalSegments) -0.02;
+        player.progress = ((player.lap * roadSegmentsAmount + player.actualSegment) / totalSegments) -0.02;
 
         if(player.progress > 1){
             if(!player.isGrounded) respawn(player);
@@ -201,21 +201,46 @@ function updateRoadProgress(player, roadLength){
 }
 
 function resolveAllCollisions(){
-    const list = Array.from(players.values());
+    const segmentsMap = new Map();
 
-    for (let i = 0; i < list.length; i++){
-        for (let j = i+1; j < list.length; j++){
+    for (const player of players.values()){
+        if(player.finish || !player.isGrounded) continue;
 
-            if (carsCollide(list[i], list[j])){
-                resolveCollision(list[i], list[j]);
+        const segment = player.actualSegment
+        if (!segmentsMap.has(segment)){
+            segmentsMap.set(segment, []);
+        }
+
+        segmentsMap.get(segment).push(player);
+    }
+
+    for (const [segment, currentPlayers] of segmentsMap){
+        //Collisions in current segment
+        for (let i = 0; i < currentPlayers.length; i++){
+            for (let j = i+1; j < currentPlayers.length; j++){
+                checkCollision(currentPlayers[i], currentPlayers[j]);
+            }
+        }
+
+        //Collisions with players from the next segment
+        const playersNeighboring = segmentsMap.get(segment+1);
+        if(!playersNeighboring) continue;
+
+        for (const playerA of currentPlayers){
+            for (const playerB of playersNeighboring){
+                checkCollision(playerA, playerB);
             }
         }
     }
 }
 
-function carsCollide(a, b){
-    if(a.finish || b.finish) return false;
+function checkCollision(a, b){
+    if(carsCollide(a, b)){
+        resolveCollision(a, b);
+    }
+}
 
+function carsCollide(a, b){
     const dx = a.position.x - b.position.x;
     const dz = a.position.z - b.position.z;
     const res = dx*dx + dz*dz < Config.CAR_DIAMETER;
@@ -227,7 +252,7 @@ function resolveCollision(a, b){
     const dz = a.position.z - b.position.z;
 
     const length = Math.hypot(dx, dz);
-    if (length == 0) return;
+    if(length == 0) return;
 
     const nx = dx / length;
     const nz = dz / length;
@@ -250,7 +275,7 @@ function startRace(){
     setInterval(() => {
         for (const [playerId, inputPack] of inputQueue.entries()) {
             const player = players.get(playerId);
-            if (!player) continue;
+            if(!player) continue;
 
             const inputPacks = inputQueue.get(playerId);
             while (inputPacks.length > 0) {

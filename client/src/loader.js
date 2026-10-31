@@ -1,5 +1,4 @@
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
-import * as THREE from 'three';
 export const loader = new GLTFLoader();
 
 export async function loadCity(scene) {
