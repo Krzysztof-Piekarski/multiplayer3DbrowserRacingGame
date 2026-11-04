@@ -81,14 +81,15 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
         playersOnline.textContent = `${data.playersCount}`;
 
 
-        if (localPlayer){
+        if(localPlayer){
             data.players.forEach(playerFromUpdate => {
-                if (localPlayer.getPlayerId() === playerFromUpdate.id &&
-                    localPlayer.nickname !== playerFromUpdate.nickname){
+                if(localPlayer.getPlayerId() === playerFromUpdate.id){
+                    const nicknameText = document.getElementById('lobby-nickname');
+                    nicknameText.textContent = `${playerFromUpdate.nickname}`;
+                    if(localPlayer.nickname !== playerFromUpdate.nickname){
                         localPlayer.nickname = playerFromUpdate.nickname;
-                        const nicknameText = document.getElementById('lobby-nickname');
-                        nicknameText.textContent = `${playerFromUpdate.nickname}`;
                         console.log(`Nickname changed to: ${playerFromUpdate.nickname}`);
+                    }
                 }
             });
         }
