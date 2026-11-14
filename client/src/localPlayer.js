@@ -15,7 +15,7 @@ export class LocalPlayer extends Player {
 
         this.renderPosition = new THREE.Vector3(0, 0, 0);
         this.renderRotation = 0;
-        this.rednerQuaternion = new THREE.Quaternion();
+        this.renderQuaternion = new THREE.Quaternion();
         this.fallPitch = 0;
         this.fallRoll = 0;
 
@@ -51,7 +51,7 @@ export class LocalPlayer extends Player {
             .multiply(quaternionPitch)
             .multiply(quaternionRoll);
 
-        this.rednerQuaternion.slerp(targetQuaternion, delta * 3);
-        this.mesh.quaternion.copy(this.rednerQuaternion);
+        this.renderQuaternion.slerp(targetQuaternion, delta * 3);
+        this.mesh.quaternion.copy(this.renderQuaternion);
     }
 }
