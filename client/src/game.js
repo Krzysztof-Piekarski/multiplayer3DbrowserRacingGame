@@ -117,7 +117,7 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
 
     const localInput = new Input();
     setupTouchControls(localInput);
-    window.addEventListener('keydown', e => {if (e.key.toLowerCase() === 'w') localInput.setForward(true);
+    window.addEventListener('keydown', e => {if (e.key.toLowerCase() === 'w') localInput.setForward(false); // temporaty change for a test session
                                         else if (e.key.toLowerCase() === 's') localInput.setBackward(true);
                                         else if (e.key.toLowerCase() === 'a') localInput.setLeft(true);
                                         else if (e.key.toLowerCase() === 'd') localInput.setRight(true);
@@ -126,7 +126,7 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
                                             stats.dom.style.display = statsVisible ? 'block' : 'none';
                                         }
     });
-    window.addEventListener('keyup', e => {if (e.key.toLowerCase() === 'w') localInput.setForward(false);
+    window.addEventListener('keyup', e => {if (e.key.toLowerCase() === 'w') localInput.setForward(true); // temporaty change for a test session
                                         else if (e.key.toLowerCase() === 's') localInput.setBackward(false);
                                         else if (e.key.toLowerCase() === 'a') localInput.setLeft(false);
                                         else if (e.key.toLowerCase() === 'd') localInput.setRight(false);
