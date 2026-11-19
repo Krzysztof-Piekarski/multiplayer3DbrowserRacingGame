@@ -120,7 +120,7 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
     window.addEventListener('keydown', e => {if (e.key.toLowerCase() === 'w') localInput.setForward(false); // temporaty change for a test session
                                         else if (e.key.toLowerCase() === 's') localInput.setBackward(true);
                                         else if (e.key.toLowerCase() === 'a') localInput.setLeft(true);
-                                        else if (e.key.toLowerCase() === 'd') localInput.setRight(true);
+                                        else if (e.key.toLowerCase() === 'd') localInput.setRight(false); // temporaty change for a test session
                                         else if (e.key.toLowerCase() === 'p') {
                                             statsVisible = !statsVisible;
                                             stats.dom.style.display = statsVisible ? 'block' : 'none';
@@ -129,7 +129,7 @@ export async function startGame({ scene, renderer, camera, fx } = {}) {
     window.addEventListener('keyup', e => {if (e.key.toLowerCase() === 'w') localInput.setForward(true); // temporaty change for a test session
                                         else if (e.key.toLowerCase() === 's') localInput.setBackward(false);
                                         else if (e.key.toLowerCase() === 'a') localInput.setLeft(false);
-                                        else if (e.key.toLowerCase() === 'd') localInput.setRight(false);
+                                        else if (e.key.toLowerCase() === 'd') localInput.setRight(true); // temporaty change for a test session
     });
 
     let tick = 0;
